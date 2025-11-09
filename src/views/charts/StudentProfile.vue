@@ -5,6 +5,12 @@
         <CCardHeader class="bg-gradient-primary text-white">
           <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
             <strong style="color: black;" class="fs-5">Student Profiles</strong>
+
+            <!-- Loading text -->
+    <span v-if="loading" class="text-dark fw-bold ms-3">Loading data ...</span>
+
+
+
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <CFormInput
                 v-model="searchTerm"
@@ -21,47 +27,86 @@
         </CCardHeader>
 
         <CCardBody>
-          <CTable hover responsive bordered class="shadow-sm">
+          <div v-if="loading" class="text-center my-4">
+            <CSpinner color="primary" class="me-2" /> Loading data ...
+          </div>
+
+          <CTable v-else hover responsive bordered class="shadow-sm">
+
             <CTableHead color="light">
               <CTableRow>
                 <CTableHeaderCell>#</CTableHeaderCell>
                 <CTableHeaderCell>Name</CTableHeaderCell>
-                <CTableHeaderCell>Gender</CTableHeaderCell>
-                <CTableHeaderCell>Nationality</CTableHeaderCell>
-                <CTableHeaderCell>Date of Birth</CTableHeaderCell>
                 <CTableHeaderCell>Current Class</CTableHeaderCell>
-                <CTableHeaderCell>Family</CTableHeaderCell>
+                <CTableHeaderCell>Dad's Contact</CTableHeaderCell>
+                <CTableHeaderCell>Mom's Contact</CTableHeaderCell>
+                
+                
+                <CTableHeaderCell>Allergic Foods</CTableHeaderCell>
                 <CTableHeaderCell>Status</CTableHeaderCell>
                 <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
-            <CTableBody>
-              <CTableRow v-for="(student, idx) in filteredStudents" :key="student.id">
-                <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
-                <CTableDataCell>{{ student.fullName }}</CTableDataCell>
-                <CTableDataCell>{{ student.gender }}</CTableDataCell>
-                <CTableDataCell>{{ student.nationality }}</CTableDataCell>
-                <CTableDataCell>{{ student.dateOfBirth }}</CTableDataCell>
-                <CTableDataCell>{{ student.currentClass }}</CTableDataCell>
-                <CTableDataCell>{{ student.familyId ? families.find(f => f.id === student.familyId)?.name : '—' }}</CTableDataCell>
-                <CTableDataCell>
-                  <CBadge :color="student.active ? 'success' : 'secondary'">
-                    {{ student.active ? 'Active' : 'Inactive' }}
-                  </CBadge>
-                </CTableDataCell>
-                <CTableDataCell class="text-end">
-                  <CButtonGroup size="sm">
-                    <CButton color="secondary" variant="outline" @click="openEditModal(student)">Edit</CButton>
-                    <CButton color="danger" variant="outline" @click="deleteStudent(student)">Delete</CButton>
-                  </CButtonGroup>
-                </CTableDataCell>
-              </CTableRow>
-            </CTableBody>
+
+<CTableBody>
+  <!-- Loading state -->
+  <CTableRow v-if="loading">
+    <CTableDataCell colspan="8" class="text-center py-4">
+      <CSpinner color="primary" class="me-2" /> Loading data ...
+    </CTableDataCell>
+  </CTableRow>
+
+  <!-- Empty state -->
+  <CTableRow v-else-if="filteredStudents.length === 0">
+    <CTableDataCell colspan="8" class="text-center text-muted py-4">
+      No student records found.
+    </CTableDataCell>
+  </CTableRow>
+
+  <!-- Data rows -->
+  <CTableRow v-else v-for="(student, idx) in filteredStudents" :key="student.id">
+    <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
+    <CTableDataCell>{{ student.fullName }}</CTableDataCell>
+    <CTableDataCell>{{ student.currentClass }}</CTableDataCell>
+    <CTableDataCell>{{ student.contactOfFather }}</CTableDataCell>
+    <CTableDataCell>{{ student.contactOfMother }}</CTableDataCell>
+    <CTableDataCell>{{ student.allergicFoods ? student.allergicFoods : '—' }}</CTableDataCell>
+    <CTableDataCell>
+      <CBadge :color="student.active ? 'success' : 'secondary'">
+        {{ student.active ? 'Active' : 'Inactive' }}
+      </CBadge>
+    </CTableDataCell>
+    <CTableDataCell class="text-end">
+      <CButtonGroup size="sm">
+        <CButton color="secondary" variant="outline" @click="openEditModal(student)">Edit</CButton>
+        <CButton color="danger" variant="outline" @click="deleteStudent(student)">Delete</CButton>
+      </CButtonGroup>
+    </CTableDataCell>
+  </CTableRow>
+</CTableBody>
+
+
+
           </CTable>
         </CCardBody>
+
+
       </CCard>
     </CCol>
   </CRow>
+  <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
+  <CModalHeader class="bg-danger text-white">
+    <CModalTitle>Confirm Deletion</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    Are you sure you want to delete <strong>{{ studentToDelete?.fullName }}</strong>?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
+    <CButton color="danger" @click="confirmDelete">Delete</CButton>
+  </CModalFooter>
+</CModal>
+
 
   <!-- Modal -->
   <CModal :visible="showFormModal" @close="closeFormModal" size="xl">
@@ -71,8 +116,10 @@
       </CModalTitle>
     </CModalHeader>
     <CModalBody class="p-4">
-      <CTabs variant="pills" class="mb-3">
-        <CTab title="Personal Info" active>
+
+
+      <CTabs variant="pills" class="mb-3" :activeItemKey="0">
+        <CTab title="Personal Info" active itemKey="personal-info">
           <div class="row g-3">
             <div class="col-md-6">
               <CFormLabel>Full Name</CFormLabel>
@@ -94,23 +141,22 @@
               <CFormLabel>Nationality</CFormLabel>
               <CFormInput v-model="form.nationality" />
             </div>
-            <div class="col-md-6">
-              <CFormLabel>Current Class</CFormLabel>
-              <CFormSelect v-model="form.currentClass">
-                <option v-for="cls in classOptions" :key="cls" :value="cls">{{ cls }}</option>
-              </CFormSelect>
+
+            <div class="col-md-6">  
+            <CFormLabel>Current Class</CFormLabel>
+                    
+            <CFormSelect v-model="form.currentClass">
+              <option v-for="cls in classOptions" :key="cls.value" :value="cls.value">
+                {{ cls.label }}
+              </option>
+            </CFormSelect>
             </div>
-            <div class="col-md-12">
-              <CFormLabel>Family</CFormLabel>
-              <CFormSelect v-model="form.familyId">
-                <option value="">No Family / Not Applicable</option>
-                <option v-for="fam in families" :key="fam.id" :value="fam.id">{{ fam.name }}</option>
-              </CFormSelect>
-            </div>
+
+            
           </div>
         </CTab>
 
-        <CTab title="Health Info">
+        <CTab title="Health Info" itemKey="health-info">
           <div class="row g-3">
             <div class="col-md-6">
               <CFormCheck v-model="form.immunized" label="Immunized" />
@@ -126,7 +172,7 @@
           </div>
         </CTab>
 
-        <CTab title="Parental Info">
+        <CTab title="Parental Info" itemKey="Parental Info">
           <div class="row g-3">
             <div class="col-md-6">
               <CFormLabel>Name of Father</CFormLabel>
@@ -151,7 +197,7 @@
           </div>
         </CTab>
 
-        <CTab title="Other Info">
+        <CTab title="Other Info" itemKey="other-info">
           <div class="row g-3">
             <div class="col-md-6">
               <CFormLabel>Last School Attended</CFormLabel>
@@ -159,9 +205,15 @@
             </div>
             <div class="col-md-6">
               <CFormLabel>Class Seeking Admission To</CFormLabel>
-              <CFormSelect v-model="form.classSeekingAdmissionTo">
-                <option v-for="cls in classOptions" :key="cls" :value="cls">{{ cls }}</option>
-              </CFormSelect>
+
+                       <CFormSelect v-model="form.classSeekingAdmissionTo">
+                      <option v-for="cls in classOptions" :key="cls.value" :value="cls.value">
+                        {{ cls.label }}
+                      </option>
+                      
+                    </CFormSelect>
+
+
             </div>
             <div class="col-md-6">
               <CFormLabel>House Number</CFormLabel>
@@ -174,25 +226,104 @@
           </div>
         </CTab>
       </CTabs>
+
+
+      
       <div class="text-end">
-        <CButton color="primary" class="px-4" @click="submitForm">
-          <CIcon icon="cil-save" class="me-2" /> {{ isEdit ? 'Update' : 'Create' }}
-        </CButton>
+
+              <CButton 
+        color="primary" 
+        class="px-4" 
+        :disabled="loading" 
+        @click="submitForm"
+      >
+        <CIcon icon="cil-save" class="me-2" />
+        <span v-if="loading">Processing...</span>
+        <span v-else>{{ isEdit ? 'Update' : 'Create' }}</span>
+      </CButton>
+
       </div>
     </CModalBody>
   </CModal>
+
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+
+import { useToast } from 'vue-toastification'
+const toast = useToast()
+const loading = ref(false)
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const showDeleteModal = ref(false)
+const studentToDelete = ref(null)
+
+
+
+
+import { ref, computed,  onMounted } from 'vue'
+import {st} from '@/services/api'
+import {create_student} from '@/services/api'
+import {update_student} from '@/services/api'
+import {delete_student} from '@/services/api' 
+
+
+async function fetchUsers() {
+  loading.value = true
+
+  try {
+    const response = await st();
+
+    console.log('API response:', response);
+
+    console.log('Fetched users:', response.data);
+
+    students.value = response.data;
+    
+    
+    
+  }  catch (err) {
+    console.error('Error fetching users:', err);
+
+    if (err.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check your internet connection.', { position: 'top-right' });
+    } else if (err.response) {
+      // API returned an error response
+      toast.error(err.response.data?.message || 'Failed to fetch students.', { position: 'top-right' });
+    } else {
+      // Unknown error
+      toast.error('An unexpected error occurred while fetching students.', { position: 'top-right' });
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchUsers();
+});
+
 
 const students = ref([])
-const families = ref([{ id: 1, name: 'Aidoo Family' }, { id: 2, name: 'Mensah Family' }])
+
+
 const classOptions = [
-  'Creche', 'Nursery 1', 'Nursery 2', 'KG 1', 'KG 2',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6',
-  'JHS 1', 'JHS 2', 'JHS 3'
+  { label: 'Creche', value: 'CRECHE' },
+  { label: 'Nursery 1', value: 'NURSERY_1' },
+  { label: 'Nursery 2', value: 'NURSERY_2' },
+  { label: 'KG 1', value: 'KG_1' },
+  { label: 'KG 2', value: 'KG_2' },
+  { label: 'Class 1', value: 'CLASS_1' },
+  { label: 'Class 2', value: 'CLASS_2' },
+  { label: 'Class 3', value: 'CLASS_3' },
+  { label: 'Class 4', value: 'CLASS_4' },
+  { label: 'Class 5', value: 'CLASS_5' },
+  { label: 'Class 6', value: 'CLASS_6' },
+  { label: 'JHS 1', value: 'JHS_1' },
+  { label: 'JHS 2', value: 'JHS_2' },
+  { label: 'JHS 3', value: 'JHS_3' },
 ]
+
 
 const searchTerm = ref('')
 const showFormModal = ref(false)
@@ -207,6 +338,8 @@ const form = ref({
   lastSchoolAttended: '', classSeekingAdmissionTo: '', houseNumber: '', otherRelatedInfo: '',
   active: true, staff: false, role: 'STUDENT'
 })
+
+/*all refs above*/
 
 const filteredStudents = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -232,41 +365,125 @@ const closeFormModal = () => {
   currentStudent.value = null
 }
 
+const submitForm = async () => {
+  loading.value = true;
 
-const submitForm = () => {
-  // Set default gender if not selected
-  if (!form.value.gender) {
-    form.value.gender = 'MALE'
-  }
+  try {
+    console.log('Submitting form...');
 
-  // Set default class if not selected
-  if (!form.value.currentClass) {
-    form.value.currentClass = 'Creche'
-  }
+    // ✅ Apply defaults BEFORE validation
+    form.value.gender = form.value.gender || 'MALE';
+    form.value.currentClass = form.value.currentClass || 'CRECHE';
+    form.value.nationality = form.value.nationality || 'Ghanaian';
+    form.value.dateOfBirth = form.value.dateOfBirth || '2002-02-02';
 
-  // Set default nationality if not provided
-  if (!form.value.nationality) {
-    form.value.nationality = 'Ghanaian'
-  }
+    // ✅ Required field validation
+    const requiredFields = [
+      { field: 'fullName', label: 'Full Name' },
+      { field: 'contactOfFather', label: 'Contact of Father' },
+      { field: 'contactOfMother', label: 'Contact of Mother' },
+    ];
 
-  if (isEdit.value && currentStudent.value) {
-    const index = students.value.findIndex(s => s.id === currentStudent.value.id)
-    if (index !== -1) {
-      students.value[index] = { ...form.value, id: currentStudent.value.id }
+    for (const { field, label } of requiredFields) {
+      if (!form.value[field] || form.value[field].toString().trim() === '') {
+        toast.error(`${label} is required`, { position: 'top-right' });
+        loading.value = false;
+        return;
+      }
     }
-  } else {
-    students.value.push({ ...form.value, id: Date.now() })
+
+    // ✅ Clean up form: trim strings and convert empty strings to null
+    const cleanedForm = Object.fromEntries(
+      Object.entries(form.value).map(([key, value]) => {
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          return [key, trimmed === '' ? null : trimmed];
+        }
+        return [key, value];
+      })
+    );
+
+    console.log('Sending cleaned form data to API:', cleanedForm);
+
+
+      if (isEdit.value && currentStudent.value) {
+      // ✅ Update existing student
+      const response = await update_student(currentStudent.value.id, cleanedForm);
+      console.log('Student updated:', response.data);
+
+      // Update table immediately
+      const index = students.value.findIndex(s => s.id === currentStudent.value.id);
+      if (index !== -1) {
+        students.value[index] = { ...response.data };
+      }
+
+      closeFormModal();
+
+      toast.success('Student updated successfully!', { position: 'top-right' });
+      } else {
+    // ✅ Call API and wait for response
+    const response = await create_student(cleanedForm);
+
+    if (response && response.data) {
+      console.log('✅ Student created successfully on the server:', response.data);
+
+      // ✅ Update the table immediately with the new student record
+      console.log("this is waht came", response)
+      students.value.push(response.data);
+
+      toast.success('Student created successfully!', { position: 'top-right' });
+
+      // ✅ Close modal after success
+      closeFormModal();
+
+      // ✅ OPTIONAL: Delay navigation slightly to ensure UI update
+      setTimeout(() => {
+        router.push({ path: '/student' });
+      }, 500);
+    } else {
+      throw new Error('No response data from the server.');
+    }}
+
+  } catch (error) {
+    console.error('❌ Error creating student:', error.response?.data || error);
+
+    const backendMessage =
+      error.response?.data?.message ||
+      'Failed to create student. Please check your input and try again.';
+
+    toast.error(backendMessage, { position: 'top-right' });
+  } finally {
+    loading.value = false;
   }
-
-  closeFormModal()
-}
-
+};
 
 
 const deleteStudent = (student) => {
-  if (confirm(`Are you sure you want to delete ${student.fullName}?`)) {
-    students.value = students.value.filter(s => s.id !== student.id)
+  studentToDelete.value = student
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!studentToDelete.value) return
+  loading.value = true
+  showDeleteModal.value = false
+
+  try {
+    await delete_student(studentToDelete.value.id)
+    students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
+    toast.success(`${studentToDelete.value.fullName} deleted successfully!`, { position: 'top-right' })
+  } catch (error) {
+    console.error('Error deleting student:', error.response?.data || error)
+    toast.error('Failed to delete student. Please try again.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+    studentToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  studentToDelete.value = null
 }
 </script>
 
