@@ -94,6 +94,7 @@
       </CCard>
     </CCol>
   </CRow>
+  
   <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
   <CModalHeader class="bg-danger text-white">
     <CModalTitle>Confirm Deletion</CModalTitle>

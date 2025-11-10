@@ -32,16 +32,11 @@
         </CCardHeader>
 
         <CCardBody>
-          <CAlert color="danger" v-if="errorMessage" class="py-2">
-            {{ errorMessage }}
-          </CAlert>
-
-          <div class="d-flex align-items-center gap-2 mb-2" v-if="isLoading">
-            <CSpinner size="sm" />
-            <span class="text-body-secondary small">Loading staff…</span>
+          <div v-if="loading" class="text-center my-4">
+            <CSpinner color="primary" class="me-2" /> Loading data ...
           </div>
 
-          <CTable hover responsive>
+          <CTable v-else hover responsive bordered class="shadow-sm">
             <CTableHead>
               <CTableRow>
                 <CTableHeaderCell class="text-center" style="width: 48px;">
@@ -53,10 +48,10 @@
                 </CTableHeaderCell>
                 <CTableHeaderCell>#</CTableHeaderCell>
                 <CTableHeaderCell>Name</CTableHeaderCell>
-                <CTableHeaderCell>Role</CTableHeaderCell>
+                
                 <CTableHeaderCell>Gender</CTableHeaderCell>
                 <CTableHeaderCell>Nationality</CTableHeaderCell>
-                <CTableHeaderCell>Date of Birth</CTableHeaderCell>
+                
                 <CTableHeaderCell>Status</CTableHeaderCell>
                 <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
               </CTableRow>
@@ -69,10 +64,10 @@
                 </CTableDataCell>
                 <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
                 <CTableDataCell>{{ row.fullName }}</CTableDataCell>
-                <CTableDataCell>{{ row.role }}</CTableDataCell>
+                
                 <CTableDataCell>{{ row.gender }}</CTableDataCell>
                 <CTableDataCell>{{ row.nationality }}</CTableDataCell>
-                <CTableDataCell>{{ row.dateOfBirth }}</CTableDataCell>
+                
                 <CTableDataCell>
                   <CBadge :color="row.active ? 'success' : 'secondary'">
                     {{ row.active ? 'Active' : 'Inactive' }}
@@ -81,7 +76,7 @@
                 <CTableDataCell class="text-end">
                   <CButtonGroup size="sm">
                     <CButton color="secondary" variant="outline" @click="openEditModal(row)">Edit</CButton>
-                    <CButton color="danger" variant="outline" @click="openSingleDeleteConfirm(row)">Delete</CButton>
+                    <CButton color="danger" variant="outline" @click="deleteStaff(row)">Delete</CButton>
                   </CButtonGroup>
                 </CTableDataCell>
               </CTableRow>
@@ -97,6 +92,21 @@
       </CCard>
     </CCol>
   </CRow>
+
+   <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
+  <CModalHeader class="bg-danger text-white">
+    <CModalTitle>Confirm Deletion</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    Are you sure you want to delete <strong>{{ staffToDelete?.fullName }}</strong>?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
+    <CButton color="danger" @click="confirmDelete">Delete</CButton>
+  </CModalFooter>
+</CModal>
+
+
 
   <!-- Modal -->
   <CModal :visible="showFormModal" @close="closeFormModal">
@@ -124,14 +134,7 @@
         <CFormLabel>Date of Birth</CFormLabel>
         <CFormInput v-model="form.dateOfBirth" type="date" />
       </div>
-      <div class="mb-3">
-        <CFormLabel>Role</CFormLabel>
-        <CFormSelect v-model="form.role">
-          <option value="TEACHER">Teacher</option>
-          <option value="PRINCIPAL">Principal</option>
-          <option value="STUDENT">Student</option>
-        </CFormSelect>
-      </div>
+      
       <CButton color="primary" @click="submitForm">
         {{ isEdit ? 'Update' : 'Create' }}
       </CButton>
@@ -142,48 +145,94 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import {
+  get_staff,
+  create_staff,
+  update_staff,
+  delete_staff,
+} from '@/services/api'
+
+const loading = ref(false)
+const errorMessage = ref('')  
+const staff = ref([])
+
+import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
+
+import {
   CFormCheck, CFormInput, CButton, CButtonGroup, CModal, CModalHeader, CModalTitle, CModalBody,
   CAlert, CSpinner, CFormLabel, CFormSelect, CBadge, CRow, CCol, CCard, CCardHeader, CCardBody,
   CTable, CTableHead, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell
 } from '@coreui/vue'
 
-// Simulated store
-let staffStore = []
-let nextId = 1
 
-const listStaff = async () => new Promise(resolve => setTimeout(() => resolve([...staffStore]), 300))
-const createStaff = async (data) => {
-  const newStaff = {
-    id: nextId++,
-    userId: `user${nextId}`,
-    password: 'hashed_password',
-    active: true,
-    staff: true,
-    ...data,
+const router = useRouter()
+const showDeleteModal = ref(false)
+const staffToDelete = ref(null)
+const toast = useToast()
+
+
+const confirmDelete = async () => {
+  if (!staffToDelete.value) return
+  loading.value = true
+  showDeleteModal.value = false
+
+  try {
+    await delete_staff(staffToDelete.value.id)
+    staff.value = staff.value.filter(s => s.id !== staffToDelete.value.id)
+    toast.success(`${staffToDelete.value.fullName} deleted successfully!`, { position: 'top-right' })
+  } catch (error) {
+    console.error('Error deleting staff:', error.response?.data || error)
+    toast.error('Failed to delete staff. Please try again.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+    staffToDelete.value = null
   }
-  staffStore.push(newStaff)
-  return new Promise(resolve => setTimeout(() => resolve(newStaff), 300))
 }
-const updateStaff = async (id, data) => {
-  const index = staffStore.findIndex(s => s.id === id)
-  if (index !== -1) {
-    staffStore[index] = { ...staffStore[index], ...data }
+
+
+
+async function fetchStaff() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const response = await get_staff()
+    staff.value = response.data
+  } catch (err) {
+
+    if(err.code === 'ERR_NETWORK'){
+      toast.error('Network error. Please check you internet connection.', {position: 'top-right'});
+      
+    }else if (err.response) {
+      // API returned an error response
+      toast.error(err.response.data?.message || 'Failed to fetch staff.', { position: 'top-right' });
+    } else {
+      // Unknown error
+      toast.error('An unexpected error occurred while fetching staff.', { position: 'top-right' });
+    }
+  } finally {
+    loading.value = false
   }
-  return new Promise(resolve => setTimeout(() => resolve(staffStore[index]), 300))
-}
-const deleteStaff = async (id) => {
-  staffStore = staffStore.filter(s => s.id !== id)
-  return new Promise(resolve => setTimeout(() => resolve(true), 300))
-}
+ 
+} 
+
+
+onMounted (()=>{
+  fetchStaff();
+})
+
+
+
+
+
 const bulkDeleteStaff = async (ids) => {
   staffStore = staffStore.filter(s => !ids.includes(s.id))
   return new Promise(resolve => setTimeout(() => resolve(true), 300))
 }
 
 // Component state
-const staff = ref([])
+
 const isLoading = ref(false)
-const errorMessage = ref('')
+
 const searchTerm = ref('')
 const selectedIds = ref([])
 const showFormModal = ref(false)
@@ -198,19 +247,17 @@ const form = ref({
   role: 'TEACHER',
 })
 
-const fetchStaff = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
-  try {
-    staff.value = await listStaff()
-  } catch (err) {
-    errorMessage.value = 'Failed to load staff.'
-  } finally {
-    isLoading.value = false
-  }
+const deleteStaff = (staff) => {
+  staffToDelete.value = staff
+  showDeleteModal.value = true
 }
 
-onMounted(fetchStaff)
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  staffToDelete.value = null
+}
+
+
 
 const filteredStaff = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -261,25 +308,95 @@ const closeFormModal = () => {
 }
 
 const submitForm = async () => {
+
+  loading.value = true;
+
   try {
-    if (isEdit.value && currentStaff.value) {
-      await updateStaff(currentStaff.value.id, form.value)
-    } else {
-      await createStaff(form.value)
+
+    form.value.role = 'TEACHER';
+    form.value.gender = form.value.gender || "MALE";
+    form.value.nationality = form.value.nationality || "Ghanaian";
+    form.value.dateOfBirth = form.value.dateOfBirth || '2002-02-02';
+
+    // ✅ Required field validation
+    const requiredFields = [
+      { field: 'fullName', label: 'Full Name' },
+      { field: 'gender', label: 'Gender' },
+     
+    ];
+
+    for (const { field, label } of requiredFields) {
+      if (!form.value[field] || form.value[field].toString().trim() === '') {
+        toast.error(`${label} is required`, { position: 'top-right' });
+        loading.value = false;
+        return;
+      }
     }
-    await fetchStaff()
-    closeFormModal()
-  } catch (err) {
-    errorMessage.value = 'Failed to save staff.'
+
+    // ✅ Clean up form: trim strings and convert empty strings to null
+    const cleanedForm = Object.fromEntries(
+      Object.entries(form.value).map(([key, value]) => {
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          return [key, trimmed === '' ? null : trimmed];
+        }
+        return [key, value];
+      })
+    );
+
+     console.log('Sending cleaned form data to API:', cleanedForm);
+
+    if (isEdit.value && currentStaff.value) {
+      const response = await update_staff(currentStaff.value.id, cleanedForm);
+      
+     // Update table immediately
+      const index = staff.value.findIndex(s => s.id === currentStaff.value.id);
+      if (index !== -1) {
+        staff.value[index] = { ...response.data };
+      }
+
+      closeFormModal();
+
+      toast.success('staff updated successfully!', { position: 'top-right' });
+      } else {
+    // ✅ Call API and wait for response
+    const response = await create_staff(cleanedForm);
+
+    if (response && response.data) {
+      console.log('✅ staff created successfully on the server:', response.data);
+
+      // ✅ Update the table immediately with the new staff record
+      console.log("this is waht came", response)
+      staff.value.push(response.data);
+
+      toast.success('Staff created successfully!', { position: 'top-right' });
+
+      // ✅ Close modal after success
+      closeFormModal();
+
+      // ✅ OPTIONAL: Delay navigation slightly to ensure UI update
+      setTimeout(() => {
+        router.push({ path: '/staff' });
+      }, 500);
+    } else {
+      throw new Error('No response data from the server.');
+    }}
+
+  } catch (error) {
+    console.error('❌ Error creating staff:', error.response?.data || error);
+
+    const backendMessage =
+      error.response?.data?.message ||
+      'Failed to create staff. Please check your input and try again.';
+
+    toast.error(backendMessage, { position: 'top-right' });
+  } finally {
+    loading.value = false;
   }
 }
 
-const openSingleDeleteConfirm = async (staffMember) => {
-  if (confirm(`Delete ${staffMember.fullName}?`)) {
-    await deleteStaff(staffMember.id)
-    await fetchStaff()
-  }
-}
+
+
 
 const openBulkDeleteConfirm = async () => {
   if (confirm(`Delete ${selectedIds.value.length} selected staff members?`)) {

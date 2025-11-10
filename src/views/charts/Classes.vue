@@ -53,6 +53,20 @@
     </CCol>
   </CRow>
 
+  <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
+  <CModalHeader class="bg-danger text-white">
+    <CModalTitle>Confirm Deletion</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    Are you sure you want to delete <strong>{{ classToDelete?.name }}</strong>?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
+    <CButton color="danger" @click="confirmDelete">Delete</CButton>
+  </CModalFooter>
+</CModal>
+
+
   <!-- Modal -->
   <CModal :visible="showFormModal" @close="closeFormModal">
     <CModalHeader>
@@ -65,11 +79,13 @@
         <option v-for="cls in classOptions" :key="cls" :value="cls">{{ cls }}</option>
       </CFormSelect>
 
-      <CFormLabel class="mt-3">Staff (Optional)</CFormLabel>
-      <CFormSelect v-model="form.staffId">
-        <option value="">No Staff Assigned</option>
-        <option v-for="staff in staffList" :key="staff.id" :value="staff.id">{{ staff.fullName }}</option>
-      </CFormSelect>
+      <CFormLabel class="mt-3">Staff</CFormLabel>
+  <CFormSelect v-model="form.staff">
+    <option value="">No Staff Assigned</option>
+    <option v-for="staff in staff" :key="staff.id" :value="staff.id">
+      {{ staff.fullName }}
+    </option>
+  </CFormSelect>
 
       <div class="text-end mt-4">
         <CButton color="primary" @click="submitForm">
@@ -81,17 +97,52 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
 
-const gradeClasses = ref([
-  { id: 1, name: 'CLASS_1', staffId: 1 },
-  { id: 2, name: 'CLASS_2', staffId: null },
-])
+import { useToast } from 'vue-toastification'
+import { ref, computed, onMounted } from 'vue'
+import {create_class, update_class, delete_class, get_classes, get_staff} from '../../services/api.js'
 
-const staffList = ref([
-  { id: 1, fullName: 'Mr. Aidoo' },
-  { id: 2, fullName: 'Ms. Mensah' },
-])
+const toast = useToast()
+const staff = ref([])
+const loading = ref(false)
+
+const showDeleteModal = ref(false)
+const classToDelete = ref(null)
+
+
+async function fetchClasses() {
+  try {
+    const response = await get_classes();
+    const response_for_staff = await get_staff();
+
+    staff.value =response_for_staff.data;
+
+    gradeClasses.value = response.data;
+  } catch (err) {
+    console.error('Error fetching users:', err);
+
+    if (err.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check your internet connection.', { position: 'top-right' });
+    } else if (err.response) {
+      // API returned an error response
+      toast.error(err.response.data?.message || 'Failed to fetch classes.', { position: 'top-right' });
+    } else {
+      // Unknown error
+      toast.error('An unexpected error occurred while fetching classes.', { position: 'top-right' });
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchClasses();
+});
+
+
+const gradeClasses = ref([])
+
+
 
 const classOptions = [
   'CRECHE', 'NURSERY_1', 'NURSERY_2', 'KG_1', 'KG_2',
@@ -104,7 +155,7 @@ const showFormModal = ref(false)
 const isEdit = ref(false)
 const currentClass = ref(null)
 
-const form = ref({ name: '', staffId: '' })
+const form = ref({ name: '', staff: '' })
 
 const filteredClasses = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -116,7 +167,7 @@ const filteredClasses = computed(() => {
 const openAddModal = () => {
   isEdit.value = false
   currentClass.value = null
-  form.value = { name: '', staffId: '' }
+  form.value = { name: '',staff: '' }
   showFormModal.value = true
 }
 
@@ -125,7 +176,7 @@ const openEditModal = (cls) => {
   currentClass.value = cls
   form.value = {
     name: cls.name,
-    staffId: cls.staffId || ''
+    staff: cls.staff || ''
   }
   showFormModal.value = true
 }
@@ -135,36 +186,112 @@ const closeFormModal = () => {
   currentClass.value = null
 }
 
-const submitForm = () => {
-  if (!form.value.name) return
+const submitForm = async () => {
+  loading.value = true;
 
-  const staff = staffList.value.find(s => s.id === form.value.staffId)
-
-  if (isEdit.value && currentClass.value) {
-    const index = gradeClasses.value.findIndex(c => c.id === currentClass.value.id)
-    if (index !== -1) {
-      gradeClasses.value[index] = {
-        ...form.value,
-        id: currentClass.value.id,
-        staff
-      }
+  try {
+    // ✅ Validate required field: Class Name
+    if (!form.value.name || form.value.name.trim() === '') {
+      toast.error('Class Name is required', { position: 'top-right' });
+      loading.value = false;
+      return;
     }
-  } else {
-    gradeClasses.value.push({
-      ...form.value,
-      id: Date.now(),
-      staff
-    })
+
+    // ✅ Validate class name against allowed options
+    const validClasses = [
+      'CRECHE', 'NURSERY_1', 'NURSERY_2', 'KG_1', 'KG_2',
+      'CLASS_1', 'CLASS_2', 'CLASS_3', 'CLASS_4', 'CLASS_5', 'CLASS_6',
+      'JHS_1', 'JHS_2', 'JHS_3'
+    ];
+    if (!validClasses.includes(form.value.name)) {
+      toast.error('Invalid class name selected', { position: 'top-right' });
+      loading.value = false;
+      return;
+    }
+
+    // ✅ Normalize: convert empty strings to null
+    const cleanedForm = {
+      name: form.value.name.trim(),
+      staff: form.value && form.value.staff.trim() !== '' ? form.value.staff : null
+    };
+
+    const cleanedForm2 = {
+  name: form.value.name.trim(),
+  staff: form.value.staff && form.value.staff !== ''
+    ? {
+        id: form.value.staff
+      }
+    : null
+};
+
+
+
+
+    console.log('Submitting cleaned form:', cleanedForm2);
+
+    let response;
+    if (isEdit.value && currentClass.value) {
+      // Update class
+      response = await update_class(currentClass.value.id, cleanedForm2);
+      console.log('Update responsewwwwwwwwwwwwwww:', response.data);
+      const index = gradeClasses.value.findIndex(c => c.id === currentClass.value.id);
+      if (index !== -1) {
+  const updatedClass = response.data;
+  
+  // attach full staff object if found in list
+  if (updatedClass.staff?.id) {
+    const matchedStaff = staff.value.find(s => s.id === updatedClass.staff.id);
+    if (matchedStaff) updatedClass.staff = matchedStaff;
   }
 
-  closeFormModal()
+  gradeClasses.value[index] = updatedClass;
+}
+      toast.success('Class updated successfully!', { position: 'top-right' });
+    } else {
+      // Create class
+      response = await create_class(cleanedForm);
+      gradeClasses.value.push(response.data);
+      toast.success('Class created successfully!', { position: 'top-right' });
+    }
+
+    closeFormModal();
+
+  } catch (err) {
+    console.error('Error submitting form:', err);
+    const backendMessage = err.response?.data?.message || 'Failed to submit form.';
+    toast.error(backendMessage, { position: 'top-right' });
+  } finally {
+    loading.value = false;
+  }
+};
+const deleteClass = (cs) => {
+  classToDelete.value = cs
+  showDeleteModal.value = true
 }
 
-const deleteClass = (cls) => {
-  if (confirm(`Delete class "${cls.name}"?`)) {
-    gradeClasses.value = gradeClasses.value.filter(c => c.id !== cls.id)
+const confirmDelete = async () => {
+  if (!classToDelete.value) return
+  loading.value = true
+  showDeleteModal.value = false
+
+  try {
+    await delete_class(classToDelete.value.id)
+    gradeClasses.value = gradeClasses.value.filter(s => s.id !== classToDelete.value.id)
+    toast.success(`${classToDelete.value.name} deleted successfully!`, { position: 'top-right' })
+  } catch (error) {
+    console.error('Error deleting class:', error.response?.data || error)
+    toast.error('Failed to delete class. Please try again.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+    classToDelete.value = null
   }
 }
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  classToDelete.value = null
+}
+
 </script>
 
 <style scoped>
