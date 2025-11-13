@@ -2,6 +2,7 @@
   <CRow>
     <CCol :xs="12">
       <CCard class="mb-4">
+
         <CCardHeader>
           <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
             <strong>Fee Structures</strong>
@@ -117,6 +118,7 @@
             </CTable>
           </DocsExample>
         </CCardBody>
+
       </CCard>
     </CCol>
   </CRow>
@@ -130,7 +132,7 @@
       <div class="mb-3">
         <CFormLabel for="academicYear">Academic Year</CFormLabel>
         <CFormSelect id="academicYear" v-model="formFee.academicYearId">
-          <option value="" disabled>Select Academic Year</option>
+          <option value="" disabled  selected>Select Academic Year</option>
           <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">{{ ay.name }}</option>
         </CFormSelect>
       </div>
@@ -138,7 +140,7 @@
       <div class="mb-3">
         <CFormLabel for="gradeClass">Class (Grade)</CFormLabel>
         <CFormSelect id="gradeClass" v-model="formFee.gradeClassId">
-          <option value="" disabled>Select Class</option>
+          <option value="" disabled  selected >Select Class</option>
           <option v-for="gc in gradeClasses" :key="gc.id" :value="gc.id">{{ gc.name }}</option>
         </CFormSelect>
       </div>
@@ -146,7 +148,7 @@
       <div class="mb-3">
         <CFormLabel for="term">Term</CFormLabel>
         <CFormSelect id="term" v-model="formFee.termId">
-          <option value="" disabled>Select Term</option>
+          <option value="" disabled  selected>Select Term</option>
           <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
         </CFormSelect>
       </div>
@@ -205,6 +207,10 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()  
+
 
 /**
  * API simulation aligned to your JPA model:
@@ -216,98 +222,53 @@ import { ref, computed, reactive, onMounted } from 'vue'
  *   amount: string|number
  * }
  */
-const feeStructureApi = (() => {
-  // Lookups
-  const AY = [
-    { id: 1, name: '2024/2025' },
-    { id: 2, name: '2025/2026' },
-  ]
-  const GC = [
-    { id: 10, name: 'KG 1' },
-    { id: 11, name: 'Grade 1' },
-    { id: 12, name: 'Grade 2' },
-    { id: 13, name: 'JHS 1' },
-  ]
-  const TM = [
-    { id: 100, name: 'Term 1' },
-    { id: 101, name: 'Term 2' },
-    { id: 102, name: 'Term 3' },
-  ]
+import { get_academic_years, get_classes, get_terms, create_fee_structure, get_fee_structures, update_fee_structure, delete_fee_structure } from '../../services/api'
 
-  let _idCounter = 3
-  let _data = [
-    { id: 1, academicYear: AY[0], gradeClass: GC[1], term: TM[0], amount: '250.00' },
-    { id: 2, academicYear: AY[0], gradeClass: GC[2], term: TM[1], amount: '275.50' },
-    { id: 3, academicYear: AY[0], gradeClass: GC[3], term: TM[0], amount: '320.00' },
-  ]
+const feeStructureApi = {
+  async listAcademicYears() {
+    const res = await get_academic_years()
+    return res?.data || []
+  },
 
-  const byId = (list, id) => list.find(x => String(x.id) === String(id)) || null
+  async listGradeClasses() {
+    const res = await get_classes()
+    return res?.data || []
+  },
 
-  return {
-    listFeeStructures() {
-      return new Promise((resolve) => setTimeout(() => resolve(JSON.parse(JSON.stringify(_data))), 450))
-    },
-    listAcademicYears() {
-      return new Promise((resolve) => setTimeout(() => resolve([...AY]), 250))
-    },
-    listGradeClasses() {
-      return new Promise((resolve) => setTimeout(() => resolve([...GC]), 250))
-    },
-    listTerms() {
-      return new Promise((resolve) => setTimeout(() => resolve([...TM]), 250))
-    },
-    createFeeStructure(payload) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const ay = byId(AY, payload?.academicYearId)
-          const gc = byId(GC, payload?.gradeClassId)
-          const tm = byId(TM, payload?.termId)
-          const amountNum = Number(payload?.amount)
-          if (!ay || !gc || !tm) return reject(new Error('Academic Year, Class and Term are required'))
-          if (!(amountNum >= 0)) return reject(new Error('Amount must be a valid non-negative number'))
-          _idCounter += 1
-          const created = { id: _idCounter, academicYear: ay, gradeClass: gc, term: tm, amount: amountNum.toFixed(2) }
-          _data = [..._data, created]
-          resolve(JSON.parse(JSON.stringify(created)))
-        }, 450)
-      })
-    },
-    updateFeeStructure(id, payload) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const idx = _data.findIndex(r => String(r.id) === String(id))
-          if (idx === -1) return reject(new Error('Record not found'))
-          const ay = byId(AY, payload?.academicYearId)
-          const gc = byId(GC, payload?.gradeClassId)
-          const tm = byId(TM, payload?.termId)
-          const amountNum = Number(payload?.amount)
-          if (!ay || !gc || !tm) return reject(new Error('Academic Year, Class and Term are required'))
-          if (!(amountNum >= 0)) return reject(new Error('Amount must be a valid non-negative number'))
-          const updated = { id: _data[idx].id, academicYear: ay, gradeClass: gc, term: tm, amount: amountNum.toFixed(2) }
-          _data.splice(idx, 1, updated)
-          resolve(JSON.parse(JSON.stringify(updated)))
-        }, 450)
-      })
-    },
-    deleteFeeStructure(id) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          _data = _data.filter(r => String(r.id) !== String(id))
-          resolve({ success: true })
-        }, 350)
-      })
-    },
-    deleteFeeStructures(ids) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const idSet = new Set(ids.map(String))
-          _data = _data.filter(r => !idSet.has(String(r.id)))
-          resolve({ success: true, deleted: ids.length })
-        }, 500)
-      })
-    },
-  }
-})()
+  async listTerms() {
+    const res = await get_terms()
+    return res?.data || []
+  },
+
+  async listFeeStructures() {
+    // Assuming you have an API for fetching all fee structures
+    const res = await get_fee_structures()
+    return res?.data || []
+  },
+
+  async createFeeStructure(payload) {
+    const res = await create_fee_structure(payload)
+    return res?.data
+  },
+
+  async updateFeeStructure(id, payload) {
+
+    console.log("updating fee structure", id, payload)
+    const res = await update_fee_structure(id, payload)
+    console.log("updated fee structure... yeah the out come is ress 1", res)
+    console.log("updated fee structure... yeah the out come is ress 2", res.data.data)
+    
+    return res?.data.data
+    
+    
+  },
+
+  async deleteFeeStructure(id) {
+    const res = await delete_fee_structure(id)
+    return res?.data
+  },
+}
+
 
 /* ---------- State ---------- */
 const isLoading = ref(false)
@@ -463,11 +424,10 @@ function openSingleDeleteConfirm(row) {
   showDeleteSingleModal.value = true
 }
 function closeDeleteSingleModal() {
-  if (!isDeleting.value) {
-    showDeleteSingleModal.value = false
-    deleteTarget.value = null
-  }
+  showDeleteSingleModal.value = false
+  deleteTarget.value = null
 }
+
 function openBulkDeleteConfirm() {
   showDeleteBulkModal.value = true
 }
@@ -497,6 +457,7 @@ function submitForm() {
         feeStructures.value = feeStructures.value.map(r => (r.id === updated.id ? updated : r))
         showFormModal.value = false
         resetForm()
+        toast.success('Fee structure updated successfully.', { position: 'top-right' })
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to update fee structure.'))
       .finally(done)
@@ -504,8 +465,13 @@ function submitForm() {
     feeStructureApi
       .createFeeStructure(payload)
       .then((created) => {
-        feeStructures.value = [...feeStructures.value, created]
+        console.log("created fee structure", created)
+        feeStructures.value = [...feeStructures.value, created.data]
+
+        
         showFormModal.value = false
+        toast.success('Fee structure added successfully.', { position: 'top-right' })
+
         resetForm()
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to add fee structure.'))
@@ -517,6 +483,7 @@ function submitForm() {
 function confirmDeleteSingle() {
   if (!deleteTarget.value) return
   isDeleting.value = true
+
   feeStructureApi
     .deleteFeeStructure(deleteTarget.value.id)
     .then(() => {
@@ -524,23 +491,15 @@ function confirmDeleteSingle() {
       selectedIds.value = selectedIds.value.filter(id => id !== deleteTarget.value.id)
       closeDeleteSingleModal()
     })
-    .finally(() => (isDeleting.value = false))
+    .catch((err) => {
+      console.error('Delete failed:', err)
+    })
+    .finally(() => {
+      isDeleting.value = false
+      toast.success('Fee structure deleted successfully.', { position: 'top-right' })
+    })
 }
 
-function confirmDeleteBulk() {
-  const ids = [...selectedIds.value]
-  if (ids.length === 0) return
-  isDeleting.value = true
-  feeStructureApi
-    .deleteFeeStructures(ids)
-    .then(() => {
-      const toDelete = new Set(ids)
-      feeStructures.value = feeStructures.value.filter(r => !toDelete.has(r.id))
-      selectedIds.value = []
-      closeBulkDeleteConfirm()
-    })
-    .finally(() => (isDeleting.value = false))
-}
 
 /* ---------- Init ---------- */
 onMounted(async () => {

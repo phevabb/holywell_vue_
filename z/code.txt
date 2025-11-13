@@ -1,0 +1,607 @@
+<template>
+  <CRow>
+    <CCol :xs="12">
+      <CCard class="mb-4">
+        <CCardHeader>
+          <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <strong>Fee Structures</strong>
+
+            <!-- Actions: Search (field + input) + Delete Selected + Add -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <!-- NEW: Search field dropdown -->
+              <CFormSelect
+                v-model="searchField"
+                size="sm"
+                style="min-width: 180px;"
+                aria-label="Choose search field"
+              >
+                <option value="class">Search by Class</option>
+                <option value="academicYear">Search by Academic Year</option>
+                <option value="term">Search by Term</option>
+              </CFormSelect>
+
+              <!-- Search input -->
+              <CFormInput
+                v-model="searchTerm"
+                :placeholder="searchPlaceholder"
+                :aria-label="searchPlaceholder"
+                size="sm"
+                style="min-width: 220px;"
+              />
+
+              <!-- Bulk delete -->
+              <CButton color="danger" size="sm"
+                       :disabled="selectedIds.length === 0"
+                       @click="openBulkDeleteConfirm">
+                Delete Selected ({{ selectedIds.length }})
+              </CButton>
+
+              <!-- Add Fee Structure -->
+              <CButton color="primary" size="sm" @click="openAddModal">
+                Add Fee Structure
+              </CButton>
+            </div>
+          </div>
+        </CCardHeader>
+
+        <CCardBody>
+          <p class="text-body-secondary small">Fee Structures.</p>
+
+          <!-- Error -->
+          <CAlert color="danger" v-if="errorMessage" class="py-2">
+            {{ errorMessage }}
+          </CAlert>
+
+          <!-- Loading -->
+          <div class="d-flex align-items-center gap-2 mb-2" v-if="isLoading">
+            <CSpinner size="sm" />
+            <span class="text-body-secondary small">Loading fee structures…</span>
+          </div>
+
+          <DocsExample>
+            <CTable hover responsive>
+              <CTableHead>
+                <CTableRow>
+                  <!-- Select-all (affects filtered rows only) -->
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 48px;">
+                    <CFormCheck
+                      :checked="allSelected"
+                      :indeterminate="someSelected"
+                      @change="toggleSelectAll"
+                      aria-label="Select all in current view"
+                    />
+                  </CTableHeaderCell>
+
+                  <CTableHeaderCell scope="col" style="width: 60px;">#</CTableHeaderCell>
+                  <CTableHeaderCell scope="col">Academic Year</CTableHeaderCell>
+                  <CTableHeaderCell scope="col">Class</CTableHeaderCell>
+                  <CTableHeaderCell scope="col">Term</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-end">Amount (GHS)</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-end" style="width: 160px;">Actions</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+
+              <CTableBody>
+                <CTableRow v-for="(row, idx) in filteredFeeStructures" :key="row.id">
+                  <CTableDataCell class="text-center">
+                    <CFormCheck v-model="selectedIds" :value="row.id" aria-label="Select row" />
+                  </CTableDataCell>
+
+                  <CTableHeaderCell scope="row">{{ idx + 1 }}</CTableHeaderCell>
+                  <CTableDataCell>{{ row.academicYear?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.gradeClass?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.term?.name }}</CTableDataCell>
+                  <CTableDataCell class="text-end">
+                    {{ formatAmount(row.amount) }}
+                  </CTableDataCell>
+
+                  <CTableDataCell class="text-end">
+                    <CButtonGroup size="sm">
+                      <CButton color="secondary" variant="outline" @click="openEditModal(row)">Edit</CButton>
+                      <CButton color="danger" variant="outline" @click="deleteStructure(row)">Delete</CButton>
+                    </CButtonGroup>
+                  </CTableDataCell>
+                </CTableRow>
+
+                <!-- Empty -->
+                <CTableRow v-if="!isLoading && filteredFeeStructures.length === 0">
+                  <CTableDataCell colspan="7" class="text-center text-body-secondary">
+                    No fee structures found
+                    <span v-if="searchTerm">
+                      for “{{ searchTerm }}” in
+                      {{ searchField === 'academicYear' ? 'Academic Year' : (searchField === 'term' ? 'Term' : 'Class') }}.
+                    </span>
+                  </CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </DocsExample>
+        </CCardBody>
+      </CCard>
+    </CCol>
+  </CRow>
+
+  <!-- Delete Confirmation Modal -->
+  <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
+    <CModalHeader class="bg-danger text-white">
+      <CModalTitle>Confirm Deletion</CModalTitle>
+    </CModalHeader>
+    <CModalBody>
+      Are you sure you want to delete <strong>{{ structureToDelete.gradeClass?.name }}/{{ structureToDelete.term?.name }} / {{ structureToDelete.academicYear?.name }}</strong> ?
+
+
+
+
+    </CModalBody>
+    <CModalFooter>
+      <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
+      <CButton color="danger" @click="confirmDelete">Delete</CButton>
+    </CModalFooter>
+  </CModal>
+
+
+  <!-- Edit Fee Structure Modal -->
+<CModal v-model:visible="showEditModal" @close="closeEditModal">
+  <CModalHeader>
+    <CModalTitle>Edit Fee Structure</CModalTitle>
+  </CModalHeader>
+
+  <CModalBody>
+    <div class="mb-3">
+      <CFormLabel for="academicYear">Academic Year</CFormLabel>
+      <CFormSelect id="academicYear" v-model="formFee.academicYearId">
+        <option disabled value="" selected>Select Academic Year</option>
+        <option v-if="isLoading" disabled>Loading...</option>
+        <option v-else v-for="ay in academicYears" :key="ay.id" :value="String(ay.id)">
+          {{ ay.name }}
+        </option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-3">
+      <CFormLabel for="gradeClass">Class (Grade)</CFormLabel>
+      <CFormSelect id="gradeClass" v-model="formFee.gradeClassId">
+        <option disabled value="" selected>Select Class</option>
+        <option v-if="isLoading" disabled>Loading...</option>
+        <option v-else v-for="gc in gradeClasses" :key="gc.id" :value="String(gc.id)">
+          {{ gc.name }}
+        </option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-3">
+      <CFormLabel for="term">Term</CFormLabel>
+      <CFormSelect id="term" v-model="formFee.termId">
+        <option disabled value="" selected>Select Term</option>
+        <option v-if="isLoading" disabled>Loading...</option>
+        <option v-else v-for="t in terms" :key="t.id" :value="String(t.id)">
+          {{ t.name }}
+        </option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-0">
+      <CFormLabel for="amount">Amount (GHS)</CFormLabel>
+      <CFormInput
+        id="amount"
+        v-model="formFee.amount"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="e.g., 250.00"
+      />
+    </div>
+
+    <div class="text-danger small mt-2" v-if="formValidationMessage">{{ formValidationMessage }}</div>
+  </CModalBody>
+
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="closeEditModal" :disabled="isSubmitting">
+      Cancel
+    </CButton>
+    <CButton color="primary" @click="submitEditForm" :disabled="isSubmitting">
+      <CSpinner size="sm" v-if="isSubmitting" class="me-2" /> Update
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+  
+
+
+  <!-- Add/Edit Modal -->
+<!-- Add/Edit Modal -->
+<CModal v-model:visible="showFormModal" @close="closeFormModal" :key="isEdit ? 'edit-modal' : 'add-modal'">
+  <CModalHeader>
+    <CModalTitle>{{ isEdit ? 'Edit Fee Structure' : 'Add Fee Structure' }}</CModalTitle>
+  </CModalHeader>
+
+  <CModalBody>
+    <div class="mb-3">
+      <CFormLabel for="academicYear">Academic Year</CFormLabel>
+      <CFormSelect id="academicYear" v-model="formFee.academicYearId">
+        <option disabled value="" selected>Select Academic Year</option>
+        <option v-if="isLoading" disabled>Loading...</option>
+        <option v-else v-for="ay in academicYears" :key="ay.id" :value="ay.id">{{ ay.name }}</option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-3">
+      <CFormLabel for="gradeClass">Class (Grade)</CFormLabel>
+      <CFormSelect id="gradeClass" v-model="formFee.gradeClassId">
+        <option disabled value="" selected>Select Class</option>
+        <option v-if="isLoading" disabled>Loading...</option>
+        <option v-else v-for="gc in gradeClasses" :key="gc.id" :value="gc.id">{{ gc.name }}</option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-3">
+      <CFormLabel for="term">Term</CFormLabel>
+      <CFormSelect id="term" v-model="formFee.termId">
+        <option disabled value="" selected>Select Term</option>
+        <option v-if="isLoading" disabled>Loading...</option>
+        <option v-else v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-0">
+      <CFormLabel for="amount">Amount (GHS)</CFormLabel>
+      <CFormInput
+        id="amount"
+        v-model="formFee.amount"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="e.g., 250.00"
+      />
+    </div>
+
+    <div class="text-danger small mt-2" v-if="formValidationMessage">{{ formValidationMessage }}</div>
+  </CModalBody>
+
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="closeFormModal" :disabled="isSubmitting">Cancel</CButton>
+    <CButton color="primary" @click="submitForm" :disabled="isSubmitting">
+      <CSpinner size="sm" v-if="isSubmitting" class="me-2" /> {{ isEdit ? 'Update' : 'Save' }}
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+  <!-- Confirm Delete (Bulk) -->
+  
+</template>
+
+<script setup>
+
+import { ref, computed, reactive, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
+const toast = useToast()
+import {
+  get_fee_structures,
+  create_fee_structure,
+  update_fee_structure,
+  delete_fee_structure,
+  get_academic_years,
+  get_classes,
+  get_terms,
+} from '../../services/api'
+
+
+const showEditModal = ref(false)
+
+const showDeleteModal = ref(false)
+const structureToDelete = ref(null)
+
+
+ /* ---------- State ---------- */
+const isLoading = ref(false)
+const isSubmitting = ref(false)
+const isDeleting = ref(false)
+const errorMessage = ref('')
+
+const feeStructures = ref([])
+const academicYears = ref([])
+const gradeClasses = ref([])
+const terms = ref([])
+
+/* NEW: search field */
+const searchField = ref('class') // 'class' | 'academicYear' | 'term'
+const searchTerm = ref('')
+
+const selectedIds = ref([])
+
+
+const fetchFeeStructures = async () => {
+  isLoading.value = true
+
+
+
+  try {
+    // for academic years
+    const response_for_academic_year = await get_academic_years()
+    academicYears.value = response_for_academic_year.data
+
+    // for fee structures
+    const response_for_fee_structures = await get_fee_structures()
+    feeStructures.value = response_for_fee_structures.data
+
+    // for grade classes
+    const response_for_grade_classes =  await get_classes()
+    gradeClasses.value = response_for_grade_classes.data
+
+    // for terms
+    const response_for_terms =  await get_terms()
+    terms.value = response_for_terms.data
+
+
+  } catch (err) {
+    toast.error('Failed to load academic years.', { position: 'top-right' })
+  } finally {
+   isLoading.value = false
+  }
+}
+
+onMounted(() => {
+
+  fetchFeeStructures()
+})
+
+/* ---------- Form (Add/Edit) ---------- */
+const showFormModal = ref(false)
+const isEdit = ref(false)
+const editingId = ref(null)
+const formFee = reactive({
+  academicYearId: '',
+  gradeClassId: '',
+  termId: '',
+  amount: '',
+})
+const formValidationMessage = ref('')
+
+
+/* ---------- Computed ---------- */
+const searchPlaceholder = computed(() => {
+  switch (searchField.value) {
+    case 'academicYear': return 'Search academic year...'
+    case 'term': return 'Search term...'
+    default: return 'Search class...'
+  }
+})
+
+const filteredFeeStructures = computed(() => {
+  const q = searchTerm.value.trim().toLowerCase()
+  if (!q) return feeStructures.value
+
+  return feeStructures.value.filter((row) => {
+    if (searchField.value === 'academicYear') {
+      return String(row?.academicYear?.name || '').toLowerCase().includes(q)
+    }
+    if (searchField.value === 'term') {
+      return String(row?.term?.name || '').toLowerCase().includes(q)
+    }
+    // default: class
+    return String(row?.gradeClass?.name || '').toLowerCase().includes(q)
+  })
+})
+
+const filteredIds = computed(() => filteredFeeStructures.value.map(r => r.id))
+const allSelected = computed(() =>
+  filteredIds.value.length > 0 &&
+  filteredIds.value.every(id => selectedIds.value.includes(id)),
+)
+const someSelected = computed(() =>
+  filteredIds.value.length > 0 &&
+  !allSelected.value &&
+  filteredIds.value.some(id => selectedIds.value.includes(id)),
+)
+
+/* ---------- Helpers ---------- */
+function formatAmount(v) {
+  const n = Number(v)
+  if (Number.isNaN(n)) return v
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+function resetForm() {
+  formFee.academicYearId = ''
+  formFee.gradeClassId = ''
+  formFee.termId = ''
+  formFee.amount = ''
+  formValidationMessage.value = ''
+  editingId.value = null
+}
+function validateForm() {
+  if (!formFee.academicYearId) {
+    formValidationMessage.value = 'Academic Year is required.'
+    return false
+  }
+  if (!formFee.gradeClassId) {
+    formValidationMessage.value = 'Class (Grade) is required.'
+    return false
+  }
+  if (!formFee.termId) {
+    formValidationMessage.value = 'Term is required.'
+    return false
+  }
+  if (formFee.amount === ''){
+    formValidationMessage.value = 'Amount is required.'
+    return false
+  }
+  
+  if (formFee.amount < 0) {
+    formValidationMessage.value = 'Amount must be a non-negative number.'
+    return false
+  }
+
+  formValidationMessage.value = ''
+  return true
+}
+
+
+/* ---------- Select All for current filtered view ---------- */
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selectedIds.value = selectedIds.value.filter(id => !filteredIds.value.includes(id))
+  } else {
+    const set = new Set(selectedIds.value)
+    filteredIds.value.forEach(id => set.add(id))
+    selectedIds.value = Array.from(set)
+  }
+}
+
+
+
+/* ---------- Modal handlers ---------- */
+function openAddModal() {
+  isEdit.value = false
+  formFee.academicYearId = ''
+  formFee.gradeClassId = ''
+  formFee.termId = ''
+  formFee.amount = ''
+  formValidationMessage.value = ''
+  showFormModal.value = true
+}
+
+
+// Modal handlers
+function openEditModal(row) {
+  editingId.value = row.id
+  formFee.academicYearId = row.academicYear?.id ? String(row.academicYear.id) : ''
+  formFee.gradeClassId = row.gradeClass?.id ? String(row.gradeClass.id) : ''
+  formFee.termId = row.term?.id ? String(row.term.id) : ''
+  formFee.amount = row.amount != null ? row.amount : ''
+  formValidationMessage.value = ''
+  showEditModal.value = true
+}
+
+
+function closeFormModal() {
+  if (!isSubmitting.value) {
+    showFormModal.value = false
+    resetForm()
+  }
+}
+
+
+
+const submitForm = async () => {
+  if (!validateForm()) return
+  isSubmitting.value = true
+
+  try {
+    if (isEdit.value) {
+      // Update
+      await update_fee_structure(editingId.value, {
+        academicYearId: formFee.academicYearId,
+        gradeClassId: formFee.gradeClassId,
+        termId: formFee.termId,
+        amount: formFee.amount,
+      })
+      toast.success('Fee structure updated successfully!', { position: 'top-right' })
+    } else {
+      // Create
+      await create_fee_structure({
+        academicYearId: formFee.academicYearId,
+        gradeClassId: formFee.gradeClassId,
+        termId: formFee.termId,
+        amount: formFee.amount,
+      })
+
+
+
+
+      toast.success('Fee structure created successfully!', { position: 'top-right' })
+    }
+
+    showFormModal.value = false
+    resetForm()
+    await fetchFeeStructures()
+
+  } catch (error) {
+    console.error('Submit error:', error)
+    toast.error('Failed to save fee structure. Please try again.', { position: 'top-right' })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+
+const deleteStructure = (Structure) => {
+  structureToDelete.value = Structure
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!structureToDelete.value) return
+  isLoading.value = true
+  showDeleteModal.value = false
+
+  try {
+    await delete_fee_structure(structureToDelete.value.id)
+    feeStructures.value = feeStructures.value.filter(t => t.id !== structureToDelete.value.id)
+
+
+    toast.success("Fee sturcture deleted successfully!", { position: 'top-right' })
+
+
+    //toast.success(`${structureToDelete.gradeClass?.name} ${ structureToDelete.term?.name } ${ structureToDelete.academicYear?.name } deleted successfully!`, { position: 'top-right' })
+
+
+    
+  } catch (error) {
+    console.error('Error deleting Fee Structure:', error.response?.data || error)
+    toast.error('Failed to delete Fee Structure. Please try again.', { position: 'top-right' })
+  } finally {
+    isLoading.value = false
+    structureToDelete.value = null
+  }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  structureToDelete.value = null
+}
+
+/* ✅ Defined in scope — highlighted for you */
+function closeEditModal() {
+  showFormModal.value = false
+  isEdit.value = false
+  editingId.value = null
+
+  formFee.value = {
+    academicYearId: '',
+    gradeClassId: '',
+    termId: '',
+    amount: ''
+  }
+}
+
+/* ✅ Defined in scope — highlighted for you */
+async function submitEditForm() {
+  if (!editingId.value) return
+
+  console.log('Submitting edit form for ID:', editingId.value, formFee.value)
+
+  try {
+    // Example: send to backend
+    await update_fee_structure(editingId.value, {
+        academicYearId: formFee.academicYearId,
+        gradeClassId: formFee.gradeClassId,
+        termId: formFee.termId,
+        amount: formFee.amount,
+      })
+      toast.success('Fee structure updated successfully!', { position: 'top-right' })
+
+
+    console.log('Successfully updated record')
+    showFormModal.value = false
+  } catch (error) {
+    console.error('Error updating record:', error)
+  }
+}
+</script>
+
+<style scoped>
+@media (max-width: 576px) {
+  .gap-2 { row-gap: 0.5rem; }
+}
+</style>

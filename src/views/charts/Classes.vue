@@ -19,36 +19,50 @@
           </div>
         </CCardHeader>
 
-        <CCardBody>
-          <CTable hover responsive bordered>
-            <CTableHead>
-              <CTableRow>
-                <CTableHeaderCell>#</CTableHeaderCell>
-                <CTableHeaderCell>Class Name</CTableHeaderCell>
-                <CTableHeaderCell>Staff</CTableHeaderCell>
-                <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              <CTableRow v-for="(cls, idx) in filteredClasses" :key="cls.id">
-                <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
-                <CTableDataCell>{{ cls.name }}</CTableDataCell>
-                <CTableDataCell>{{ cls.staff?.fullName || '—' }}</CTableDataCell>
-                <CTableDataCell class="text-end">
-                  <CButtonGroup size="sm">
-                    <CButton color="secondary" variant="outline" @click="openEditModal(cls)">Edit</CButton>
-                    <CButton color="danger" variant="outline" @click="deleteClass(cls)">Delete</CButton>
-                  </CButtonGroup>
-                </CTableDataCell>
-              </CTableRow>
-              <CTableRow v-if="filteredClasses.length === 0">
-                <CTableDataCell colspan="4" class="text-center text-body-secondary">
-                  No classes found<span v-if="searchTerm"> for “{{ searchTerm }}”.</span>
-                </CTableDataCell>
-              </CTableRow>
-            </CTableBody>
-          </CTable>
-        </CCardBody>
+<CCardBody>
+
+
+  <CTable hover responsive bordered>
+    <CTableHead color="light">
+      <CTableRow>
+        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell>Class Name</CTableHeaderCell>
+        <CTableHeaderCell>Staff</CTableHeaderCell>
+        <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+
+    <CTableBody>
+      <!-- Loading state -->
+      <CTableRow v-if="loading">
+        <CTableDataCell colspan="4" class="text-center py-4">
+          <CSpinner color="primary" class="me-2" /> Loading data ...
+        </CTableDataCell>
+      </CTableRow>
+
+      <!-- Empty state -->
+      <CTableRow v-else-if="filteredClasses.length === 0">
+        <CTableDataCell colspan="4" class="text-center text-muted py-4">
+          No classes found<span v-if="searchTerm"> for “{{ searchTerm }}”.</span>
+        </CTableDataCell>
+      </CTableRow>
+
+      <!-- Data rows -->
+      <CTableRow v-else v-for="(cls, idx) in filteredClasses" :key="cls.id">
+        <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
+        <CTableDataCell>{{ cls.name }}</CTableDataCell>
+        <CTableDataCell>{{ cls.staff?.fullName || '—' }}</CTableDataCell>
+        <CTableDataCell class="text-end">
+          <CButtonGroup size="sm">
+            <CButton color="secondary" variant="outline" @click="openEditModal(cls)">Edit</CButton>
+            <CButton color="danger" variant="outline" @click="deleteClass(cls)">Delete</CButton>
+          </CButtonGroup>
+        </CTableDataCell>
+      </CTableRow>
+    </CTableBody>
+  </CTable>
+</CCardBody>
+
       </CCard>
     </CCol>
   </CRow>
@@ -88,9 +102,19 @@
   </CFormSelect>
 
       <div class="text-end mt-4">
-        <CButton color="primary" @click="submitForm">
-          {{ isEdit ? 'Update' : 'Create' }}
-        </CButton>
+
+        <CButton 
+        color="primary" 
+        class="px-4" 
+        :disabled="loading" 
+        @click="submitForm"
+      >
+        <CIcon icon="cil-save" class="me-2" />
+        <span v-if="loading">Processing...</span>
+        <span v-else>{{ isEdit ? 'Update' : 'Create' }}</span>
+      </CButton>
+
+
       </div>
     </CModalBody>
   </CModal>
@@ -111,6 +135,7 @@ const classToDelete = ref(null)
 
 
 async function fetchClasses() {
+  loading.value = true;
   try {
     const response = await get_classes();
     const response_for_staff = await get_staff();
@@ -188,6 +213,8 @@ const closeFormModal = () => {
 
 const submitForm = async () => {
   loading.value = true;
+
+  form.value.name = form.value.name || 'CRECHE';
 
   try {
     // ✅ Validate required field: Class Name

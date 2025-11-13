@@ -258,7 +258,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const showDeleteModal = ref(false)
 const studentToDelete = ref(null)
-
+const students = ref([])
 
 
 
@@ -305,7 +305,7 @@ onMounted(() => {
 });
 
 
-const students = ref([])
+
 
 
 const classOptions = [

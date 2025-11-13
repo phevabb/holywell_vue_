@@ -17,6 +17,7 @@ export default [
     component: 'CNavItem',
     name: 'Fee Structure',
     to: '/fees/student-fee-structure',  /* CHANGE HERE */
+    
     icon: 'cil-spreadshee',
   },
   {

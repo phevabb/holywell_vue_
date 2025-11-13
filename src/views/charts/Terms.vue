@@ -20,7 +20,11 @@
         </CCardHeader>
 
         <CCardBody>
-          <CTable hover responsive bordered>
+          <div v-if="loading" class="text-center my-4">
+            <CSpinner color="primary" class="me-2" /> Loading terms...
+          </div>
+
+          <CTable v-else hover responsive bordered>
             <CTableHead>
               <CTableRow>
                 <CTableHeaderCell>#</CTableHeaderCell>
@@ -33,7 +37,7 @@
               <CTableRow v-for="(term, idx) in filteredTerms" :key="term.id">
                 <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
                 <CTableDataCell>{{ term.name }}</CTableDataCell>
-                <CTableDataCell>{{ term.academicYear }}</CTableDataCell>
+                <CTableDataCell>{{ term.academicYear?.name || '—' }}</CTableDataCell>
                 <CTableDataCell class="text-end">
                   <CButtonGroup size="sm">
                     <CButton color="secondary" variant="outline" @click="openEditModal(term)">Edit</CButton>
@@ -41,7 +45,7 @@
                   </CButtonGroup>
                 </CTableDataCell>
               </CTableRow>
-              <CTableRow v-if="filteredTerms.length === 0">
+              <CTableRow v-if="!loading && filteredTerms.length === 0">
                 <CTableDataCell colspan="4" class="text-center text-body-secondary">
                   No terms found<span v-if="searchTerm"> for “{{ searchTerm }}”.</span>
                 </CTableDataCell>
@@ -53,26 +57,47 @@
     </CCol>
   </CRow>
 
-  <!-- Modal -->
+  <!-- Delete Confirmation Modal -->
+  <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
+    <CModalHeader class="bg-danger text-white">
+      <CModalTitle>Confirm Deletion</CModalTitle>
+    </CModalHeader>
+    <CModalBody>
+      Are you sure you want to delete <strong>{{ termToDelete?.name }}</strong> for <strong>{{ termToDelete?.academicYear?.name }}</strong>?
+    </CModalBody>
+    <CModalFooter>
+      <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
+      <CButton color="danger" @click="confirmDelete">Delete</CButton>
+    </CModalFooter>
+  </CModal>
+
+  <!-- Add/Edit Modal -->
   <CModal :visible="showFormModal" @close="closeFormModal">
     <CModalHeader>
       <CModalTitle>{{ isEdit ? 'Edit Term' : 'Add Term' }}</CModalTitle>
     </CModalHeader>
     <CModalBody>
       <CFormLabel>Term Name</CFormLabel>
-      <CFormSelect v-model="form.name">
-        <option disabled value="">Select Term</option>
-        <option v-for="term in termOptions" :key="term" :value="term">{{ term }}</option>
-      </CFormSelect>
+<CFormSelect v-model="form.name">
+  <option disabled value="" selected>Select Term</option>
+  <option v-for="term in termOptions" :key="term.value" :value="term.value">
+    {{ term.label }}
+  </option>
+</CFormSelect>
 
-      <CFormLabel class="mt-3">Academic Year</CFormLabel>
-      <CFormSelect v-model="form.academicYear">
-        <option disabled value="">Select Academic Year</option>
-        <option v-for="year in academicYears" :key="year" :value="year">{{ year }}</option>
-      </CFormSelect>
+<CFormLabel class="mt-3">Academic Year</CFormLabel>
+<CFormSelect v-model="form.academicYearId">
+  <option disabled value="" selected>Select Academic Year</option>
+  <option v-if="academicYearsLoading" disabled>Loading...</option>
+  <option v-else v-for="year in academicYears" :key="year.id" :value="year.id">
+    {{ year.name }}
+  </option>
+</CFormSelect>
+
 
       <div class="text-end mt-4">
-        <CButton color="primary" @click="submitForm">
+        <CButton color="primary" :disabled="loading" @click="submitForm">
+          <CSpinner v-if="loading" size="sm" class="me-2" />
           {{ isEdit ? 'Update' : 'Create' }}
         </CButton>
       </div>
@@ -81,37 +106,81 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
+import {
+  get_terms,
+  create_term,
+  update_term,
+  delete_term,
+  get_academic_years
+} from '../../services/api'
 
-const termOptions = ['1st Term', '2nd Term', '3rd Term']
-const academicYears = ['2022/2023', '2023/2024', '2024/2025']
+const toast = useToast()
+const loading = ref(false)
+const academicYearsLoading = ref(false)
 
-const terms = ref([
-  { id: 1, name: '1st Term', academicYear: '2023/2024' },
-  { id: 2, name: '2nd Term', academicYear: '2023/2024' },
-])
+const termOptions = [
+  { label: '1st Term', value: 'FIRST_TERM' },
+  { label: '2nd Term', value: 'SECOND_TERM' },
+  { label: '3rd Term', value: 'THIRD_TERM' }
+]
 
+const academicYears = ref([])
+const terms = ref([])
 const searchTerm = ref('')
 const showFormModal = ref(false)
+const showDeleteModal = ref(false)
 const isEdit = ref(false)
 const currentTerm = ref(null)
+const termToDelete = ref(null)
 
-const form = ref({ name: '', academicYear: '' })
+const form = ref({ name: '', academicYearId: '' })
 
 const filteredTerms = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
   return term
     ? terms.value.filter(t =>
         t.name.toLowerCase().includes(term) ||
-        t.academicYear.toLowerCase().includes(term)
+        t.academicYear?.name?.toLowerCase().includes(term)
       )
     : terms.value
+})
+
+const fetchTerms = async () => {
+  loading.value = true
+  try {
+    const response = await get_terms()
+    terms.value = response.data
+  } catch (err) {
+    toast.error('Failed to fetch terms.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchAcademicYears = async () => {
+  academicYearsLoading.value = true
+  try {
+    const response = await get_academic_years()
+    academicYears.value = response.data
+  } catch (err) {
+    toast.error('Failed to load academic years.', { position: 'top-right' })
+  } finally {
+    academicYearsLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchTerms()
+  fetchAcademicYears()
 })
 
 const openAddModal = () => {
   isEdit.value = false
   currentTerm.value = null
-  form.value = { name: '', academicYear: '' }
+  form.value = { name: '', academicYearId: '' }
+  
   showFormModal.value = true
 }
 
@@ -120,7 +189,7 @@ const openEditModal = (term) => {
   currentTerm.value = term
   form.value = {
     name: term.name,
-    academicYear: term.academicYear
+    academicYearId: term.academicYear?.id || ''
   }
   showFormModal.value = true
 }
@@ -130,31 +199,71 @@ const closeFormModal = () => {
   currentTerm.value = null
 }
 
-const submitForm = () => {
-  if (!form.value.name || !form.value.academicYear) return
-
-  if (isEdit.value && currentTerm.value) {
-    const index = terms.value.findIndex(t => t.id === currentTerm.value.id)
-    if (index !== -1) {
-      terms.value[index] = {
-        ...form.value,
-        id: currentTerm.value.id
-      }
-    }
-  } else {
-    terms.value.push({
-      ...form.value,
-      id: Date.now()
-    })
+const submitForm = async () => {
+ 
+  if (!form.value.name || !form.value.academicYearId) {
+    toast.error('Please fill in all fields.', { position: 'top-right' })
+    return
   }
 
-  closeFormModal()
+  loading.value = true
+  try {
+    const payload = {
+      name: form.value.name,
+      academicYearId: form.value.academicYearId
+    }
+
+    if (isEdit.value && currentTerm.value) {
+      const payload = {
+  name: form.value.name,
+  academicYear: { id: form.value.academicYearId }
+}
+
+      const t = await update_term(currentTerm.value.id, payload)
+      console.log("ttttttt", t)
+
+      toast.success('Term updated successfully')
+    } else {
+      await create_term(payload)
+      toast.success('Term created successfully')
+    }
+
+    await fetchTerms()
+    closeFormModal()
+  } catch (err) {
+    console.error('Error saving term:', err.response?.data || err)
+    toast.error(err.response?.data?.message || 'Failed to save term.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+  }
 }
 
 const deleteTerm = (term) => {
-  if (confirm(`Delete term "${term.name}" for ${term.academicYear}?`)) {
-    terms.value = terms.value.filter(t => t.id !== term.id)
+  termToDelete.value = term
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!termToDelete.value) return
+  loading.value = true
+  showDeleteModal.value = false
+
+  try {
+    await delete_term(termToDelete.value.id)
+    terms.value = terms.value.filter(t => t.id !== termToDelete.value.id)
+    toast.success(`${termToDelete.value.name} deleted successfully!`, { position: 'top-right' })
+  } catch (error) {
+    console.error('Error deleting term:', error.response?.data || error)
+    toast.error('Failed to delete term. Please try again.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+    termToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  termToDelete.value = null
 }
 </script>
 

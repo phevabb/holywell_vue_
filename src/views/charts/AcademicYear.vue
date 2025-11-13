@@ -20,7 +20,11 @@
         </CCardHeader>
 
         <CCardBody>
-          <CTable hover responsive bordered>
+          <div v-if="loading" class="text-center my-4">
+            <CSpinner color="primary" class="me-2" /> Loading academic years...
+          </div>
+
+          <CTable v-else hover responsive bordered>
             <CTableHead>
               <CTableRow>
                 <CTableHeaderCell>#</CTableHeaderCell>
@@ -39,7 +43,7 @@
                   </CButtonGroup>
                 </CTableDataCell>
               </CTableRow>
-              <CTableRow v-if="filteredYears.length === 0">
+              <CTableRow v-if="!loading && filteredYears.length === 0">
                 <CTableDataCell colspan="3" class="text-center text-body-secondary">
                   No academic years found<span v-if="searchTerm"> for “{{ searchTerm }}”.</span>
                 </CTableDataCell>
@@ -51,6 +55,20 @@
     </CCol>
   </CRow>
 
+  <CModal :visible="showDeleteModal" @close="cancelDelete" size="md">
+  <CModalHeader class="bg-danger text-white">
+    <CModalTitle>Confirm Deletion</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    Are you sure you want to delete <strong>{{ yearToDelete?.name }}</strong>?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
+    <CButton color="danger" @click="confirmDelete">Delete</CButton>
+  </CModalFooter>
+</CModal>
+
+
   <!-- Modal -->
   <CModal :visible="showFormModal" @close="closeFormModal">
     <CModalHeader>
@@ -60,7 +78,8 @@
       <CFormLabel>Name</CFormLabel>
       <CFormInput v-model="form.name" placeholder="e.g. 2024/2025" />
       <div class="text-end mt-3">
-        <CButton color="primary" @click="submitForm">
+        <CButton color="primary" :disabled="loading" @click="submitForm">
+          <CSpinner v-if="loading" size="sm" class="me-2" />
           {{ isEdit ? 'Update' : 'Create' }}
         </CButton>
       </div>
@@ -69,17 +88,21 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { get_academic_years, create_academic_year, update_academic_year, delete_academic_year } from '../../services/api'
+import { ref, computed, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 
-const academicYears = ref([
-  { id: 1, name: '2023/2024' },
-  { id: 2, name: '2024/2025' },
-])
+const toast = useToast()
+const loading = ref(false)
+
+const academicYears = ref([])
 
 const searchTerm = ref('')
 const showFormModal = ref(false)
 const isEdit = ref(false)
 const currentYear = ref(null)
+const showDeleteModal = ref(false)
+const yearToDelete = ref(null)
 
 const form = ref({ name: '' })
 
@@ -88,6 +111,29 @@ const filteredYears = computed(() => {
   return term
     ? academicYears.value.filter(y => y.name.toLowerCase().includes(term))
     : academicYears.value
+})
+
+async function fetchYears() {
+  loading.value = true
+  try {
+    const response = await get_academic_years()
+    academicYears.value = response.data
+  } catch (err) {
+    console.error('Error fetching years', err)
+    if (err.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check your internet connection.', { position: 'top-right' })
+    } else if (err.response) {
+      toast.error(err.response.data?.message || 'Failed to fetch academic year(s).', { position: 'top-right' })
+    } else {
+      toast.error('An unexpected error occurred while fetching academic year(s).', { position: 'top-right' })
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchYears()
 })
 
 const openAddModal = () => {
@@ -109,29 +155,60 @@ const closeFormModal = () => {
   currentYear.value = null
 }
 
-const submitForm = () => {
+const submitForm = async () => {
   if (!form.value.name.trim()) return
 
-  if (isEdit.value && currentYear.value) {
-    const index = academicYears.value.findIndex(y => y.id === currentYear.value.id)
-    if (index !== -1) academicYears.value[index] = { ...form.value, id: currentYear.value.id }
-  } else {
-    academicYears.value.push({ ...form.value, id: Date.now() })
+  loading.value = true
+  try {
+    if (isEdit.value && currentYear.value) {
+      await update_academic_year(currentYear.value.id, form.value)
+      toast.success('Academic year updated successfully')
+    } else {
+      await create_academic_year(form.value)
+      toast.success('Academic year created successfully')
+    }
+    await fetchYears()
+    closeFormModal()
+  } catch (err) {
+    toast.error('Failed to save academic year')
+  } finally {
+    loading.value = false
   }
-
-  closeFormModal()
 }
 
 const deleteYear = (year) => {
-  if (confirm(`Delete academic year "${year.name}"?`)) {
-    academicYears.value = academicYears.value.filter(y => y.id !== year.id)
+  yearToDelete.value = year
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!yearToDelete.value) return
+  loading.value = true
+  showDeleteModal.value = false
+
+  try {
+    await delete_academic_year(yearToDelete.value.id)
+    academicYears.value = academicYears.value.filter(y => y.id !== yearToDelete.value.id)
+    toast.success(`${yearToDelete.value.name} deleted successfully!`, { position: 'top-right' })
+  } catch (error) {
+    console.error('Error deleting year:', error.response?.data || error)
+    toast.error('Failed to delete year. Please try again.', { position: 'top-right' })
+  } finally {
+    loading.value = false
+    yearToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  yearToDelete.value = null
 }
 </script>
 
 <style scoped>
-/* Ensure header actions wrap well on smaller screens */
 @media (max-width: 576px) {
-  .gap-2 { row-gap: 0.5rem; }
+  .gap-2 {
+    row-gap: 0.5rem;
+  }
 }
 </style>

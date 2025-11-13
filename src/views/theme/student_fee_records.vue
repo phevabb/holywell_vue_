@@ -11,6 +11,7 @@
           <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
             <!-- Search Field Selector -->
             <CFormSelect v-model="searchField" size="sm" style="width: 180px;">
+              <option value="student">Search by Student</option>
               <option value="class">Search by Current Class</option>
               <option value="feeStructure">Search by Fee Structure</option>
               <option value="fullyPaid">Filter by Is Fully Paid</option>
@@ -105,17 +106,17 @@
                   <CTableDataCell class="text-end">{{ formatAmount(row.amountPaid) }}</CTableDataCell>
                   <CTableDataCell class="text-end">{{ formatAmount(row.balance) }}</CTableDataCell>
                   <CTableDataCell>
-                    <CBadge :color="row.isFullyPaid ? 'success' : 'warning'">
-                      {{ row.isFullyPaid ? 'Yes' : 'No' }}
+                    <CBadge :color="row.fullyPaid ? 'success' : 'warning'">
+                      
+
+                      {{ row.fullyPaid ? 'Yes' : 'No' }}
                     </CBadge>
                   </CTableDataCell>
                   <CTableDataCell>{{ formatDateTime(row.dateCreated) }}</CTableDataCell>
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
-                      <CButton color="secondary" variant="outline" @click="openEditModal(row)">
-                        Edit
-                      </CButton>
+                      
                       <CButton color="danger" variant="outline" @click="openSingleDeleteConfirm(row)">
                         Delete
                       </CButton>
@@ -146,81 +147,98 @@
   </CRow>
 
   <!-- Add/Edit Record Modal -->
-  <CModal :visible="showFormModal" @close="closeFormModal">
-    <CModalHeader>
-      <CModalTitle>{{ isEdit ? 'Edit Fee Record' : 'Add Fee Record' }}</CModalTitle>
-    </CModalHeader>
-    <CModalBody>
-      <div class="mb-3">
-        <CFormLabel for="student">Student</CFormLabel>
-        <CFormSelect id="student" v-model="formRecord.studentId">
-          <option value="" disabled>Select Student</option>
-          <option v-for="s in students" :key="s.id" :value="s.id">
-            {{ s.fullName }}
-          </option>
-        </CFormSelect>
-      </div>
+  <!-- Add/Edit Record Modal -->
+<CModal :visible="showFormModal" @close="closeFormModal">
+  <CModalHeader>
+    <CModalTitle>{{ isEdit ? 'Edit Fee Record' : 'Add Fee Record' }}</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    <!-- Searchable Student Field -->
+    <div class="mb-3 position-relative">
+      <CFormLabel for="student">Student</CFormLabel>
+      <CFormInput
+        id="student"
+        v-model="studentSearch"
+        placeholder="Search student by name..."
+        @input="filterStudents"
+        autocomplete="off"
+      />
 
-      <div class="mb-3">
-        <CFormLabel for="feeStructure">Fee Structure (Class / Term / AY)</CFormLabel>
-        <CFormSelect id="feeStructure" v-model="formRecord.feeStructureId">
-          <option value="" disabled>Select Fee Structure</option>
-          <option v-for="fs in feeStructures" :key="fs.id" :value="fs.id">
-            {{ fs.gradeClass?.name }} / {{ fs.term?.name }} / {{ fs.academicYear?.name }}
-          </option>
-        </CFormSelect>
+      <!-- Dropdown for filtered students -->
+      <div
+        v-if="filteredStudents && filteredStudents.length > 0 && studentSearch"
+        class="dropdown-menu show w-100"
+        style="max-height: 200px; overflow-y: auto;"
+      >
+        <button
+          class="dropdown-item"
+          v-for="s in filteredStudents"
+          :key="s.id"
+          @click="selectStudent(s)"
+        >
+          {{ s.fullName }}
+        </button>
       </div>
+    </div>
 
-      <div class="mb-3">
-        <CFormLabel for="amountPaid">Amount Paid (GHS)</CFormLabel>
-        <CFormInput
-          id="amountPaid"
-          v-model="formRecord.amountPaid"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        />
-      </div>
+    <!-- Fee Structure -->
+    <div class="mb-3">
+      <CFormLabel for="feeStructure">Fee Structure (Class / Term / AY)</CFormLabel>
+      <CFormSelect id="feeStructure" v-model="formRecord.feeStructureId">
+        <option value="" disabled selected>Select Fee Structure</option>
+        <option v-for="fs in feeStructures" :key="fs.id" :value="fs.id">
+          {{ fs.gradeClass?.name }} / {{ fs.term?.name }} / {{ fs.academicYear?.name }} - (GH₵ {{ fs?.amount }})
+        </option>
+      </CFormSelect>
+    </div>
 
-      <div class="mb-3">
-        <CFormLabel for="balance">Balance (GHS)</CFormLabel>
-        <CFormInput
-          id="balance"
-          v-model="formRecord.balance"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        />
-      </div>
+    <!-- Amount Paid -->
+    <div class="mb-3">
+      <CFormLabel for="amountPaid">Amount Paid (GHS)</CFormLabel>
+      <CFormInput
+        id="amountPaid"
+        v-model="formRecord.amountPaid"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="0.00"
+      />
+    </div>
 
-      <div class="mb-0">
-        <CFormCheck
-          id="fullyPaid"
-          v-model="formRecord.isFullyPaid"
-          :checked="formRecord.isFullyPaid"
-          label="Is Fully Paid"
-        />
-      </div>
+    <!-- Balance -->
+    <div class="mb-3">
+      <CFormLabel for="balance">Balance (GHS)</CFormLabel>
+      <CFormInput
+        id="balance"
+        v-model="formRecord.balance"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="0.00"
+      />
+    </div>
 
-      <!-- Readonly dateCreated on edit -->
-      <div class="mt-2 text-body-secondary small" v-if="isEdit && viewDateCreated">
-        Created: {{ formatDateTime(viewDateCreated) }}
-      </div>
+    <!-- Fully Paid -->
+    
 
-      <div class="text-danger small mt-2" v-if="formValidationMessage">
-        {{ formValidationMessage }}
-      </div>
-    </CModalBody>
-    <CModalFooter>
-      <CButton color="secondary" variant="outline" @click="closeFormModal" :disabled="isSubmitting">Cancel</CButton>
-      <CButton color="primary" @click="submitForm" :disabled="isSubmitting">
-        <CSpinner size="sm" v-if="isSubmitting" class="me-2" />
-        {{ isEdit ? 'Update' : 'Save' }}
-      </CButton>
-    </CModalFooter>
-  </CModal>
+    <!-- Readonly dateCreated on edit -->
+    <div class="mt-2 text-body-secondary small" v-if="isEdit && viewDateCreated">
+      Created: {{ formatDateTime(viewDateCreated) }}
+    </div>
+
+    <!-- Validation Message -->
+    <div class="text-danger small mt-2" v-if="formValidationMessage">
+      {{ formValidationMessage }}
+    </div>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="closeFormModal" :disabled="isSubmitting">Cancel</CButton>
+    <CButton color="primary" @click="submitForm" :disabled="isSubmitting">
+      <CSpinner size="sm" v-if="isSubmitting" class="me-2" />
+      {{ isEdit ? 'Update' : 'Save' }}
+    </CButton>
+  </CModalFooter>
+</CModal>
 
   <!-- Confirm Delete (Single) -->
   <CModal :visible="showDeleteSingleModal" @close="closeDeleteSingleModal">
@@ -269,169 +287,50 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
+import { useToast } from 'vue-toastification' 
+const toast = useToast()  
+import {
+  get_student_fee_record,
+  create_student_fee_record,
+  update_student_fee_record,
+  delete_student_fee_record,
+  get_fee_structures,
+  st,
 
-/**
- * Simulated API aligned with StudentFeeRecord:
- * StudentFeeRecord {
- *   id,
- *   student: { id, fullName },
- *   feeStructure: { id, academicYear:{id,name}, gradeClass:{id,name}, term:{id,name} },
- *   amountPaid, balance, isFullyPaid, dateCreated: 'YYYY-MM-DDTHH:mm:ssZ'
- * }
- */
+} from '../../services/api' 
+const filteredStudents = ref([])
+
+const studentSearch = ref('')
+
+
 const sfrApi = (() => {
-  // Lookups - Students
-  const STUDENTS = [
-    { id: 201, fullName: 'Ama Boateng' },
-    { id: 202, fullName: 'Kojo Mensah' },
-    { id: 203, fullName: 'Yaw Owusu' },
-  ]
-
-  // Lookups - FeeStructure parts
-  const AY = [
-    { id: 1, name: '2024/2025' },
-    { id: 2, name: '2025/2026' },
-  ]
-  const GC = [
-    { id: 11, name: 'Grade 1' },
-    { id: 12, name: 'Grade 2' },
-    { id: 13, name: 'JHS 1' },
-  ]
-  const TM = [
-    { id: 100, name: 'Term 1' },
-    { id: 101, name: 'Term 2' },
-    { id: 102, name: 'Term 3' },
-  ]
-
-  // FeeStructures
-  const FEE_STRUCTURES = [
-    { id: 1, academicYear: AY[0], gradeClass: GC[0], term: TM[0] },
-    { id: 2, academicYear: AY[0], gradeClass: GC[1], term: TM[1] },
-    { id: 3, academicYear: AY[0], gradeClass: GC[2], term: TM[0] },
-    { id: 4, academicYear: AY[1], gradeClass: GC[1], term: TM[0] },
-  ]
-
-  // Initial StudentFeeRecords
-  let _idCounter = 3
-  let _data = [
-    {
-      id: 1,
-      student: STUDENTS[0],
-      feeStructure: FEE_STRUCTURES[0],
-      amountPaid: '150.00',
-      balance: '100.00',
-      isFullyPaid: false,
-      dateCreated: new Date('2025-09-12T10:05:00Z').toISOString(),
-    },
-    {
-      id: 2,
-      student: STUDENTS[1],
-      feeStructure: FEE_STRUCTURES[1],
-      amountPaid: '300.00',
-      balance: '0.00',
-      isFullyPaid: true,
-      dateCreated: new Date('2025-09-15T14:30:00Z').toISOString(),
-    },
-    {
-      id: 3,
-      student: STUDENTS[2],
-      feeStructure: FEE_STRUCTURES[2],
-      amountPaid: '80.00',
-      balance: '240.00',
-      isFullyPaid: false,
-      dateCreated: new Date('2025-10-03T08:45:00Z').toISOString(),
-    },
-  ]
-
-  const byId = (list, id) => list.find(x => String(x.id) === String(id)) || null
-  const nowIso = () => new Date().toISOString()
-
   return {
     listSfr() {
-      return new Promise((resolve) => setTimeout(() => resolve(JSON.parse(JSON.stringify(_data))), 450))
+      return get_student_fee_record().then(res => res.data)
     },
     listStudents() {
-      return new Promise((resolve) => setTimeout(() => resolve(JSON.parse(JSON.stringify(STUDENTS))), 250))
+      return st().then(res => res.data)
     },
     listFeeStructures() {
-      return new Promise((resolve) => setTimeout(() => resolve(JSON.parse(JSON.stringify(FEE_STRUCTURES))), 250))
+      return get_fee_structures().then(res => res.data)
     },
-    createSfr(payload /* { studentId, feeStructureId, amountPaid, balance, isFullyPaid } */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const student = byId(STUDENTS, payload?.studentId)
-          const feeStructure = byId(FEE_STRUCTURES, payload?.feeStructureId)
-          const amountPaid = Number(payload?.amountPaid)
-          const balance = Number(payload?.balance)
-          const isFullyPaid = !!payload?.isFullyPaid
-
-          if (!student) return reject(new Error('Student is required'))
-          if (!feeStructure) return reject(new Error('Fee Structure is required'))
-          if (!(amountPaid >= 0)) return reject(new Error('Amount Paid must be non-negative'))
-          if (!(balance >= 0)) return reject(new Error('Balance must be non-negative'))
-
-          _idCounter += 1
-          const created = {
-            id: _idCounter,
-            student, feeStructure,
-            amountPaid: amountPaid.toFixed(2),
-            balance: balance.toFixed(2),
-            isFullyPaid,
-            dateCreated: nowIso(),
-          }
-          _data = [..._data, created]
-          resolve(JSON.parse(JSON.stringify(created)))
-        }, 450)
-      })
+    createSfr(payload) {
+      return create_student_fee_record(payload).then(res => res.data)
     },
-    updateSfr(id, payload /* same as create */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const idx = _data.findIndex(r => String(r.id) === String(id))
-          if (idx === -1) return reject(new Error('Record not found'))
-          const student = byId(STUDENTS, payload?.studentId)
-          const feeStructure = byId(FEE_STRUCTURES, payload?.feeStructureId)
-          const amountPaid = Number(payload?.amountPaid)
-          const balance = Number(payload?.balance)
-          const isFullyPaid = !!payload?.isFullyPaid
-
-          if (!student) return reject(new Error('Student is required'))
-          if (!feeStructure) return reject(new Error('Fee Structure is required'))
-          if (!(amountPaid >= 0)) return reject(new Error('Amount Paid must be non-negative'))
-          if (!(balance >= 0)) return reject(new Error('Balance must be non-negative'))
-
-          const updated = {
-            id: _data[idx].id,
-            student, feeStructure,
-            amountPaid: amountPaid.toFixed(2),
-            balance: balance.toFixed(2),
-            isFullyPaid,
-            dateCreated: _data[idx].dateCreated, // immutable
-          }
-          _data.splice(idx, 1, updated)
-          resolve(JSON.parse(JSON.stringify(updated)))
-        }, 450)
-      })
+    updateSfr(id, payload) {
+      return update_student_fee_record(id, payload).then(res => res.data)
     },
     deleteSfr(id) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          _data = _data.filter(r => String(r.id) !== String(id))
-          resolve({ success: true })
-        }, 350)
-      })
+      return delete_student_fee_record(id).then(res => res.data)
     },
-    deleteSfrBulk(ids /* number[] */) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const idSet = new Set(ids.map(String))
-          _data = _data.filter(r => !idSet.has(String(r.id)))
-          resolve({ success: true, deleted: ids.length })
-        }, 500)
-      })
+    deleteSfrBulk(ids) {
+      return Promise.all(ids.map(id => delete_student_fee_record(id)))
+        .then(() => ({ success: true, deleted: ids.length }))
     },
   }
 })()
+
+
 
 /* ---------- State ---------- */
 const isLoading = ref(false)
@@ -461,7 +360,7 @@ const formRecord = reactive({
   feeStructureId: '',
   amountPaid: '',
   balance: '',
-  isFullyPaid: false,
+  fullyPaid: false,
 })
 const formValidationMessage = ref('')
 
@@ -483,10 +382,13 @@ function addToast({ message, color = 'success', delay = 2200 }) {
 /* ---------- Computed ---------- */
 const searchPlaceholder = computed(() => {
   switch (searchField.value) {
-    case 'feeStructure': return 'Search fee structure (e.g., Grade 1/Term 1/2024/2025)...'
-    default: return 'Search current class...'
+    case 'student': return 'Search by student name...'
+    case 'feeStructure': return 'Search fee structure (e.g., Grade 1 / Term 1 / 2024/2025)...'
+    case 'class': return 'Search by class...'
+    default: return 'Enter search term...'
   }
 })
+
 
 function feeStructureLabel(fs) {
   if (!fs) return ''
@@ -503,13 +405,19 @@ const filteredRecords = computed(() => {
   const q = searchTerm.value.trim().toLowerCase()
   if (!q) return records.value
 
-  return records.value.filter((row) => {
+    return records.value.filter((row) => {
+    if (searchField.value === 'student') {
+      return String(row?.student?.fullName || '').toLowerCase().includes(q)
+    }
     if (searchField.value === 'class') {
       return String(row?.feeStructure?.gradeClass?.name || '').toLowerCase().includes(q)
     }
-    // feeStructure combined label
-    return feeStructureLabel(row?.feeStructure).toLowerCase().includes(q)
+    if (searchField.value === 'feeStructure') {
+      return feeStructureLabel(row?.feeStructure).toLowerCase().includes(q)
+    }
+    return false
   })
+
 })
 
 const filteredIds = computed(() => filteredRecords.value.map(r => r.id))
@@ -549,6 +457,19 @@ function resetForm() {
   formValidationMessage.value = ''
   editingId.value = null
 }
+
+function filterStudents() {
+  const query = studentSearch.value.toLowerCase()
+  filteredStudents.value = students.value.filter(s =>
+    s.fullName.toLowerCase().includes(query)
+  )
+}
+function selectStudent(student) {
+  formRecord.studentId = student.id
+  studentSearch.value = student.fullName
+  filteredStudents.value = [] // hide dropdown
+}
+
 function validateForm() {
   if (!formRecord.studentId) {
     formValidationMessage.value = 'Student is required.'
@@ -562,6 +483,9 @@ function validateForm() {
     formValidationMessage.value = 'Amount Paid must be a non-negative number.'
     return false
   }
+  if (!formRecord.amountPaid || isNaN(Number(formRecord.amountPaid))) {
+  formRecord.amountPaid = 0.00
+}
   if (Number(formRecord.balance) < 0) {
     formValidationMessage.value = 'Balance must be a non-negative number.'
     return false
@@ -611,7 +535,7 @@ function openEditModal(row) {
   formRecord.feeStructureId = row?.feeStructure?.id ?? ''
   formRecord.amountPaid = row?.amountPaid ?? ''
   formRecord.balance = row?.balance ?? ''
-  formRecord.isFullyPaid = !!row?.isFullyPaid
+  formRecord.fullyPaid = !!row?.fullyPaid
   viewDateCreated.value = row?.dateCreated || ''
   formValidationMessage.value = ''
   showFormModal.value = true
@@ -643,7 +567,6 @@ function closeBulkDeleteConfirm() {
   }
 }
 
-/* ---------- Submit (Create/Update) ---------- */
 function submitForm() {
   if (!validateForm()) return
   isSubmitting.value = true
@@ -656,32 +579,46 @@ function submitForm() {
     isFullyPaid: !!formRecord.isFullyPaid,
   }
 
+  console.log('Submitting form. Payload:', payload)
+  console.log('Edit mode:', isEdit.value, 'Editing ID:', editingId.value)
+
   const done = () => (isSubmitting.value = false)
 
   if (isEdit.value && editingId.value != null) {
     sfrApi
       .updateSfr(editingId.value, payload)
       .then((updated) => {
+        console.log('API returned updated record:', updated)
         records.value = records.value.map(r => (r.id === updated.id ? updated : r))
+        console.log('Records after update:', records.value)
         showFormModal.value = false
         resetForm()
         addToast({ message: 'Record updated.' })
       })
-      .catch((err) => (formValidationMessage.value = err?.message || 'Failed to update record.'))
+      .catch((err) => {
+        console.error('Update failed:', err)
+        formValidationMessage.value = err?.message || 'Failed to update record.'
+      })
       .finally(done)
   } else {
     sfrApi
       .createSfr(payload)
       .then((created) => {
-        records.value = [...records.value, created]
+        console.log('API returned created record:', created)
+        records.value = [...records.value, created.data ?? created]
+        console.log('Records after creation:', records.value)
         showFormModal.value = false
         resetForm()
-        addToast({ message: 'Record added.' })
+        toast.success('Record added successfully.')
       })
-      .catch((err) => (formValidationMessage.value = err?.message || 'Failed to add record.'))
+      .catch((err) => {
+        console.error('Creation failed:', err)
+        formValidationMessage.value = err?.message || 'Failed to add record.'
+      })
       .finally(done)
   }
 }
+
 
 /* ---------- Delete (Single/Bulk) ---------- */
 function confirmDeleteSingle() {
@@ -699,7 +636,7 @@ function confirmDeleteSingle() {
       showDeleteSingleModal.value = false
       deleteTarget.value = null
 
-      addToast({ message: 'Record deleted.' })
+      toast.success('Record deleted successfully.')
     })
     .finally(() => (isDeleting.value = false))
 }
