@@ -107,9 +107,7 @@
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
-                      <CButton color="secondary" variant="outline" @click="openEditModal(row)">
-                        Edit
-                      </CButton>
+
                       <CButton color="danger" variant="outline" @click="openSingleDeleteConfirm(row)">
                         Delete
                       </CButton>
@@ -148,7 +146,7 @@
       <div class="mb-3">
         <CFormLabel for="sfr">Student / Class / Term / AY</CFormLabel>
         <CFormSelect id="sfr" v-model="formPayment.studentFeeRecordId">
-          <option value="" disabled>Select Student Fee Record</option>
+          <option value="" disabled selected>Select Student Fee Record</option>
           <option
             v-for="sfr in studentFeeRecords"
             :key="sfr.id"
@@ -236,139 +234,81 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
+import { get_payments, get_student_fee_record, create_payment, delete_payment } from '../../services/api'
 
+import { useToast } from 'vue-toastification'
+const toast = useToast()
 /**
  * Simulated API aligned with Payment:
  * Payment { id, studentFeeRecord, date: 'YYYY-MM-DD', amount }
  * StudentFeeRecord contains: { id, student: { id, fullName }, feeStructure: { academicYear, gradeClass, term } }
  */
 const paymentApi = (() => {
-  // Lookups for FeeStructure parts (reused)
-  const AY = [
-    { id: 1, name: '2024/2025' },
-    { id: 2, name: '2025/2026' },
-  ]
-  const GC = [
-    { id: 11, name: 'Grade 1' },
-    { id: 12, name: 'Grade 2' },
-    { id: 13, name: 'JHS 1' },
-  ]
-  const TM = [
-    { id: 100, name: 'Term 1' },
-    { id: 101, name: 'Term 2' },
-    { id: 102, name: 'Term 3' },
-  ]
-
-  // Students
-  const ST = [
-    { id: 201, fullName: 'Ama Boateng' },
-    { id: 202, fullName: 'Kojo Mensah' },
-    { id: 203, fullName: 'Yaw Owusu' },
-  ]
-
-  // StudentFeeRecords (SFR) — minimal shape for UI
-  const SFR = [
-    {
-      id: 1001,
-      student: ST[0],
-      feeStructure: { id: 1, academicYear: AY[0], gradeClass: GC[0], term: TM[0] },
-    },
-    {
-      id: 1002,
-      student: ST[1],
-      feeStructure: { id: 2, academicYear: AY[0], gradeClass: GC[1], term: TM[1] },
-    },
-    {
-      id: 1003,
-      student: ST[2],
-      feeStructure: { id: 3, academicYear: AY[0], gradeClass: GC[2], term: TM[0] },
-    },
-  ]
-
-  // Payments (initial)
-  let _idCounter = 3
-  let _data = [
-    { id: 1, studentFeeRecord: SFR[0], date: '2025-09-10', amount: '150.00' },
-    { id: 2, studentFeeRecord: SFR[1], date: '2025-09-15', amount: '200.50' },
-    { id: 3, studentFeeRecord: SFR[2], date: '2025-10-01', amount: '120.00' },
-  ]
-
-  const byId = (list, id) => list.find(x => String(x.id) === String(id)) || null
-  const today = () => new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  // Utility
+  const today = () => new Date().toISOString().slice(0, 10)
 
   return {
-    listPayments() {
-      return new Promise((resolve) =>
-        setTimeout(() => resolve(JSON.parse(JSON.stringify(_data))), 450),
-      )
+    async listPayments() {
+      try {
+        const response = await get_payments()
+        // Expecting backend to return: [{ id, studentFeeRecord, date, amount }, ...]
+        return response.data || []
+      } catch (error) {
+        console.error('Error fetching payments:', error)
+        throw error
+      }
     },
-    listStudentFeeRecords() {
-      return new Promise((resolve) =>
-        setTimeout(() => resolve(JSON.parse(JSON.stringify(SFR))), 300),
-      )
-    },
-    createPayment(payload /* { studentFeeRecordId, date?, amount } */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const sfr = byId(SFR, payload?.studentFeeRecordId)
-          const amountNum = Number(payload?.amount)
-          const date = payload?.date || today()
-          if (!sfr) return reject(new Error('Student Fee Record is required'))
-          if (!(amountNum >= 0)) return reject(new Error('Amount must be a valid non-negative number'))
 
-          _idCounter += 1
-          const created = {
-            id: _idCounter,
-            studentFeeRecord: sfr,
-            date,
-            amount: amountNum.toFixed(2),
-          }
-          _data = [..._data, created]
-          resolve(JSON.parse(JSON.stringify(created)))
-        }, 450)
-      })
+    async listStudentFeeRecords() {
+      
+      try {
+        const response = await get_student_fee_record() 
+        console.log("fee recs:.......", response.data);
+        return response.data?.map(p => p.studentFeeRecord) || []
+      } catch (error) {
+        console.error('Error fetching student fee records:', error)
+        throw error
+      }
     },
-    updatePayment(id, payload /* { studentFeeRecordId, date?, amount } */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const idx = _data.findIndex(r => String(r.id) === String(id))
-          if (idx === -1) return reject(new Error('Record not found'))
-          const sfr = byId(SFR, payload?.studentFeeRecordId)
-          const amountNum = Number(payload?.amount)
-          const date = payload?.date || today()
-          if (!sfr) return reject(new Error('Student Fee Record is required'))
-          if (!(amountNum >= 0)) return reject(new Error('Amount must be a valid non-negative number'))
 
-          const updated = {
-            id: _data[idx].id,
-            studentFeeRecord: sfr,
-            date,
-            amount: amountNum.toFixed(2),
-          }
-          _data.splice(idx, 1, updated)
-          resolve(JSON.parse(JSON.stringify(updated)))
-        }, 450)
-      })
+    async createPayment(payload) {
+      try {
+        // payload: { studentFeeRecordId, date?, amount }
+        const response = await create_payment(payload)
+
+        return response.data.all || response
+
+      } catch (error) {
+        console.error('Error creating payment:', error)
+        throw error
+      }
     },
-    deletePayment(id) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          _data = _data.filter(r => String(r.id) !== String(id))
-          resolve({ success: true })
-        }, 350)
-      })
+
+
+    async deletePayment(id) {
+      try {
+        const response = await delete_payment(id)
+        
+        toast.success('Payment deleted successfully.')
+        return response.data || response
+      } catch (error) {
+        console.error('Error deleting payment:', error)
+        throw error
+      }
     },
-    deletePayments(ids /* number[] */) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const idSet = new Set(ids.map(String))
-          _data = _data.filter(r => !idSet.has(String(r.id)))
-          resolve({ success: true, deleted: ids.length })
-        }, 500)
-      })
+
+    async deletePayments(ids) {
+      try {
+        const results = await Promise.all(ids.map(id => delete_payment(id)))
+        return { success: true, deleted: results.length }
+      } catch (error) {
+        console.error('Error deleting multiple payments:', error)
+        throw error
+      }
     },
   }
 })()
+
 
 /* ---------- State ---------- */
 const isLoading = ref(false)
@@ -402,15 +342,6 @@ const showDeleteSingleModal = ref(false)
 const deleteTarget = ref(null)
 const showDeleteBulkModal = ref(false)
 
-/* Toasts (optional) */
-const toasts = ref([])
-function addToast({ message, color = 'success', delay = 2200 }) {
-  const id = Date.now() + Math.random()
-  toasts.value.push({ id, message, color, visible: true })
-  setTimeout(() => {
-    toasts.value = toasts.value.filter(t => t.id !== id)
-  }, delay)
-}
 
 /* ---------- Computed ---------- */
 const searchPlaceholder = computed(() => {
@@ -528,6 +459,8 @@ function closeFormModal() {
 /* ---------- Delete modals ---------- */
 function openSingleDeleteConfirm(row) {
   deleteTarget.value = row
+  console.log("item to delete....:", row)
+
   showDeleteSingleModal.value = true
 }
 function closeDeleteSingleModal() {
@@ -565,7 +498,8 @@ function submitForm() {
         payments.value = payments.value.map(r => (r.id === updated.id ? updated : r))
         showFormModal.value = false
         resetForm()
-        addToast({ message: 'Payment updated.' })
+        toast.success('Payment updated successfully.')
+
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to update payment.'))
       .finally(done)
@@ -576,7 +510,8 @@ function submitForm() {
         payments.value = [...payments.value, created]
         showFormModal.value = false
         resetForm()
-        addToast({ message: 'Payment added.' })
+        toast.success('Payment added successfully.')
+
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to add payment.'))
       .finally(done)
@@ -598,8 +533,8 @@ function confirmDeleteSingle() {
       // ✅ close modal immediately
       showDeleteSingleModal.value = false
       deleteTarget.value = null
+      toasts.success('Payment deleted.  ')
 
-      addToast({ message: 'Payment deleted.' })
     })
     .finally(() => (isDeleting.value = false))
 }
@@ -619,8 +554,9 @@ function confirmDeleteBulk() {
 
       // ✅ close modal immediately
       showDeleteBulkModal.value = false
+      toast.success('Payments deleted successfully.')
 
-      addToast({ message: `Deleted ${ids.length} payment(s).` })
+      
     })
     .finally(() => (isDeleting.value = false))
 }
@@ -629,7 +565,11 @@ function confirmDeleteBulk() {
 onMounted(async () => {
   try {
     isLoading.value = true
-    await loadStudentFeeRecords()
+    const a = await get_student_fee_record()
+    console.log("tissss", a)
+
+    studentFeeRecords.value = a.data
+
     await loadPayments()
   } finally {
     isLoading.value = false

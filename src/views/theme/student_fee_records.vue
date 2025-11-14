@@ -193,30 +193,9 @@
     </div>
 
     <!-- Amount Paid -->
-    <div class="mb-3">
-      <CFormLabel for="amountPaid">Amount Paid (GHS)</CFormLabel>
-      <CFormInput
-        id="amountPaid"
-        v-model="formRecord.amountPaid"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="0.00"
-      />
-    </div>
+   
 
-    <!-- Balance -->
-    <div class="mb-3">
-      <CFormLabel for="balance">Balance (GHS)</CFormLabel>
-      <CFormInput
-        id="balance"
-        v-model="formRecord.balance"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="0.00"
-      />
-    </div>
+
 
     <!-- Fully Paid -->
     
@@ -479,13 +458,8 @@ function validateForm() {
     formValidationMessage.value = 'Fee Structure is required.'
     return false
   }
-  if ( Number(formRecord.amountPaid) < 0) {
-    formValidationMessage.value = 'Amount Paid must be a non-negative number.'
-    return false
-  }
-  if (!formRecord.amountPaid || isNaN(Number(formRecord.amountPaid))) {
-  formRecord.amountPaid = 0.00
-}
+
+  
   if (Number(formRecord.balance) < 0) {
     formValidationMessage.value = 'Balance must be a non-negative number.'
     return false

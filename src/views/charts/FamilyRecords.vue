@@ -95,9 +95,7 @@
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
-                      <CButton color="secondary" variant="outline" @click="openEditModal(row)">
-                        Edit
-                      </CButton>
+                      
                       <CButton color="danger" variant="outline" @click="openSingleDeleteConfirm(row)">
                         Delete
                       </CButton>
@@ -128,7 +126,7 @@
       <div class="mb-3">
         <CFormLabel for="family">Family</CFormLabel>
         <CFormSelect id="family" v-model="form.familyId">
-          <option value="" disabled>Select Family</option>
+          <option value="" disabled selected>Select Family</option>
           <option v-for="f in families" :key="f.id" :value="f.id">{{ f.name }}</option>
         </CFormSelect>
       </div>
@@ -136,7 +134,7 @@
       <div class="mb-3">
         <CFormLabel for="term">Term</CFormLabel>
         <CFormSelect id="term" v-model="form.termId">
-          <option value="" disabled>Select Term</option>
+          <option value="" disabled selected>Select Term</option>
           <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
         </CFormSelect>
       </div>
@@ -144,7 +142,7 @@
       <div class="mb-3">
         <CFormLabel for="ay">Academic Year</CFormLabel>
         <CFormSelect id="ay" v-model="form.academicYearId">
-          <option value="" disabled>Select Academic Year</option>
+          <option value="" disabled selected>Select Academic Year</option>
           <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">{{ ay.name }}</option>
         </CFormSelect>
       </div>
@@ -162,38 +160,10 @@
         />
       </div>
 
-      <div class="mb-3">
-        <CFormLabel for="amountPaid">Amount Paid (GHS)</CFormLabel>
-        <CFormInput
-          id="amountPaid"
-          v-model="form.amountPaid"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-          @input="recalcDerived"
-        />
-      </div>
+      
 
-      <div class="mb-3">
-        <CFormLabel for="balance">Balance (GHS)</CFormLabel>
-        <CFormInput
-          id="balance"
-          :value="formatAmount(formDerived.balance)"
-          disabled
-          readonly
-        />
-        <div class="text-body-secondary small mt-1">Calculated as Amount To Pay – Amount Paid.</div>
-      </div>
-
-      <div class="mb-0">
-        <CFormCheck
-          id="isFullyPaid"
-          :checked="formDerived.isFullyPaid"
-          label="Fully Paid"
-          disabled
-        />
-      </div>
+      
+   
 
       <!-- created date (read-only on edit) -->
       <div class="mt-2 text-body-secondary small" v-if="isEdit && viewCreated">
@@ -254,175 +224,168 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
+import {useToast} from 'vue-toastification'
+const toast = useToast()
+import { 
+  get_family_fee_rec, 
+  create_family_fee_rec, 
+  delete_family_fee_rec, 
+  get_families, 
+  get_terms, 
+  get_academic_years 
+} from '../../services/api'
 
-/**
- * Simulated API aligned with FamilyFeeRecord entity:
- * FamilyFeeRecord {
- *  id, family:{id,name}, amountToPay, amountPaid, balance, isFullyPaid,
- *  term:{id,name}, academicYear:{id,name}, dateCreated (ISO)
- * }
- */
 const ffrApi = (() => {
-  const AY = [
-    { id: 1, name: '2024/2025' },
-    { id: 2, name: '2025/2026' },
-  ]
-  const TM = [
-    { id: 100, name: 'Term 1' },
-    { id: 101, name: 'Term 2' },
-    { id: 102, name: 'Term 3' },
-  ]
-  const FAMILIES = [
-    { id: 901, name: 'Boateng Family' },
-    { id: 902, name: 'Mensah Family' },
-    { id: 903, name: 'Owusu Family' },
-  ]
+  let AY = []
+  let TM = []
+  let FAMILIES = []
+  let _data = []
 
-  let _idCounter = 3
-  let _data = [
-    {
-      id: 1,
-      family: FAMILIES[0],
-      term: TM[0],
-      academicYear: AY[0],
-      amountToPay: '500.00',
-      amountPaid: '150.00',
-      balance: '350.00',
-      isFullyPaid: false,
-      dateCreated: new Date('2025-09-08T09:20:00Z').toISOString(),
-    },
-    {
-      id: 2,
-      family: FAMILIES[1],
-      term: TM[1],
-      academicYear: AY[0],
-      amountToPay: '450.00',
-      amountPaid: '450.00',
-      balance: '0.00',
-      isFullyPaid: true,
-      dateCreated: new Date('2025-09-15T12:00:00Z').toISOString(),
-    },
-    {
-      id: 3,
-      family: FAMILIES[2],
-      term: TM[0],
-      academicYear: AY[1],
-      amountToPay: '600.00',
-      amountPaid: '400.00',
-      balance: '200.00',
-      isFullyPaid: false,
-      dateCreated: new Date('2025-10-01T15:45:00Z').toISOString(),
-    },
-  ]
-
-  const byId = (list, id) => list.find(x => String(x.id) === String(id)) || null
-  const nowIso = () => new Date().toISOString()
-  const calcBalance = (toPay, paid) => {
-    const tp = Math.max(0, Number(toPay) || 0)
-    const ap = Math.max(0, Number(paid) || 0)
-    const bal = Math.max(0, tp - ap)
-    return { balance: bal.toFixed(2), isFullyPaid: bal === 0 }
-  }
   const clone = (x) => JSON.parse(JSON.stringify(x))
 
+
+
+  // LOAD INITIAL DATA
+  const loadStaticData = async () => {
+    try {
+      const [years, terms, families, records] = await Promise.all([
+        get_academic_years(),
+        get_terms(),
+        get_families(),
+        get_family_fee_rec()
+      ])
+
+      AY = years.data || []
+      TM = terms.data || []
+      FAMILIES = families.data || []
+      _data = records.data || []
+
+    } catch (err) {
+      toast.error('Failed to load initial fee records data.', { position: 'top-right' })
+    }
+  }
+
+  loadStaticData()
+
+
+
   return {
-    listRecords() {
-      return new Promise((resolve) => setTimeout(() => resolve(clone(_data)), 450))
-    },
-    listFamilies() {
-      return new Promise((resolve) => setTimeout(() => resolve(clone(FAMILIES)), 250))
-    },
-    listTerms() {
-      return new Promise((resolve) => setTimeout(() => resolve(clone(TM)), 250))
-    },
-    listAcademicYears() {
-      return new Promise((resolve) => setTimeout(() => resolve(clone(AY)), 250))
-    },
-    createRecord(payload /* { familyId, termId, academicYearId, amountToPay, amountPaid } */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const fam = byId(FAMILIES, payload?.familyId)
-          const tm = byId(TM, payload?.termId)
-          const ay = byId(AY, payload?.academicYearId)
-          const toPayNum = Number(payload?.amountToPay)
-          const paidNum = Number(payload?.amountPaid)
-          if (!fam) return reject(new Error('Family is required'))
-          if (!tm) return reject(new Error('Term is required'))
-          if (!ay) return reject(new Error('Academic Year is required'))
-          if (!(toPayNum >= 0)) return reject(new Error('Amount To Pay must be non-negative'))
-          if (!(paidNum >= 0)) return reject(new Error('Amount Paid must be non-negative'))
 
-          const { balance, isFullyPaid } = calcBalance(toPayNum, paidNum)
-          _idCounter += 1
-          const created = {
-            id: _idCounter,
-            family: fam,
-            term: tm,
-            academicYear: ay,
-            amountToPay: toPayNum.toFixed(2),
-            amountPaid: paidNum.toFixed(2),
-            balance,
-            isFullyPaid,
-            dateCreated: nowIso(),
-          }
-          _data = [..._data, created]
-          resolve(clone(created))
-        }, 450)
-      })
+    async listRecords() {
+      try {
+        const res = await get_family_fee_rec()
+        _data = res.data || []
+        return clone(_data)
+      } catch (err) {
+        toast.error('Failed to fetch family fee records.', { position: 'top-right' })
+        return clone(_data)
+      }
     },
-    updateRecord(id, payload /* same as create */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const idx = _data.findIndex(r => String(r.id) === String(id))
-          if (idx === -1) return reject(new Error('Record not found'))
 
-          const fam = byId(FAMILIES, payload?.familyId)
-          const tm = byId(TM, payload?.termId)
-          const ay = byId(AY, payload?.academicYearId)
-          const toPayNum = Number(payload?.amountToPay)
-          const paidNum = Number(payload?.amountPaid)
-          if (!fam) return reject(new Error('Family is required'))
-          if (!tm) return reject(new Error('Term is required'))
-          if (!ay) return reject(new Error('Academic Year is required'))
-          if (!(toPayNum >= 0)) return reject(new Error('Amount To Pay must be non-negative'))
-          if (!(paidNum >= 0)) return reject(new Error('Amount Paid must be non-negative'))
+    async listFamilies() {
+      try {
+        const res = await get_families()
+        FAMILIES = res.data || []
+        return clone(FAMILIES)
+      } catch (err) {
+        toast.error('Failed to fetch families.', { position: 'top-right' })
+        return clone(FAMILIES)
+      }
+    },
 
-          const { balance, isFullyPaid } = calcBalance(toPayNum, paidNum)
-          const updated = {
-            id: _data[idx].id,
-            family: fam,
-            term: tm,
-            academicYear: ay,
-            amountToPay: toPayNum.toFixed(2),
-            amountPaid: paidNum.toFixed(2),
-            balance,
-            isFullyPaid,
-            dateCreated: _data[idx].dateCreated, // immutable
-          }
-          _data.splice(idx, 1, updated)
-          resolve(clone(updated))
-        }, 450)
-      })
+    async listTerms() {
+      try {
+        const res = await get_terms()
+        TM = res.data || []
+        return clone(TM)
+      } catch (err) {
+        toast.error('Failed to fetch terms.', { position: 'top-right' })
+        return clone(TM)
+      }
     },
-    deleteRecord(id) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          _data = _data.filter(r => String(r.id) !== String(id))
-          resolve({ success: true })
-        }, 350)
-      })
+
+    async listAcademicYears() {
+      try {
+        const res = await get_academic_years()
+        AY = res.data || []
+        return clone(AY)
+      } catch (err) {
+        toast.error('Failed to fetch academic years.', { position: 'top-right' })
+        return clone(AY)
+      }
     },
-    deleteRecords(ids /* number[] */) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const set = new Set(ids.map(String))
-          _data = _data.filter(r => !set.has(String(r.id)))
-          resolve({ success: true, deleted: ids.length })
-        }, 500)
-      })
+
+
+
+    // CREATE
+    async createRecord(payload) {
+      try {
+        const res = await create_family_fee_rec(payload)
+        return clone(res.data)
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to create record.'
+        toast.error(msg, { position: 'top-right' })
+        throw err
+      }
     },
+
+
+
+    // UPDATE (TEMPORARY – uses create API because no update API imported)
+    async updateRecord(id, payload) {
+      try {
+        // If backend expects create_family_fee_rec(payload) only,
+        // OR create_family_fee_rec(id, payload)
+        const res = await create_family_fee_rec(id, payload)
+        return clone(res.data)
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to update record.'
+        toast.error(msg, { position: 'top-right' })
+        throw err
+      }
+    },
+
+
+
+    // DELETE one
+    async deleteRecord(id) {
+  try {
+    await delete_family_fee_rec(id)
+    return { success: true }
+  } catch (err) {
+    const backendMsg = err.response?.data?.message?.toLowerCase() || ''
+
+    let msg = 'Failed to delete record.'
+
+    if (backendMsg.includes('constraint') || backendMsg.includes('foreign')) {
+      msg = 'This record is linked to other data and cannot be deleted.'
+    }
+
+    toast.error(msg, { position: 'top-right' })
+    throw err
+  }
+},
+
+
+
+
+    // DELETE multiple
+    async deleteRecords(ids) {
+      try {
+        for (const id of ids) await delete_family_fee_rec(id)
+        return { success: true, deleted: ids.length }
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to delete selected records.'
+        toast.error(msg, { position: 'top-right' })
+        throw err
+      }
+    }
+
   }
 })()
+
+
+
 
 /* ---------- State ---------- */
 const isLoading = ref(false)
@@ -545,10 +508,7 @@ function validateForm() {
     formValidationMessage.value = 'Amount To Pay must be a non-negative number.'
     return false
   }
-  if (form.amountPaid === '' || Number(form.amountPaid) < 0) {
-    formValidationMessage.value = 'Amount Paid must be a non-negative number.'
-    return false
-  }
+
   formValidationMessage.value = ''
   return true
 }
@@ -649,7 +609,8 @@ function submitForm() {
         records.value = records.value.map(r => (r.id === updated.id ? updated : r))
         showFormModal.value = false
         resetForm()
-        addToast({ message: 'Family fee record updated.' })
+        toast.success('Family fee record updated successfully.', { position: 'top-right' }) 
+    
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to update record.'))
       .finally(done)
@@ -660,7 +621,8 @@ function submitForm() {
         records.value = [...records.value, created]
         showFormModal.value = false
         resetForm()
-        addToast({ message: 'Family fee record added.' })
+        toast.success('Family fee record created successfully.', { position: 'top-right' }) 
+
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to add record.'))
       .finally(done)
@@ -680,8 +642,9 @@ function confirmDeleteSingle() {
       // close immediately
       showDeleteSingleModal.value = false
       deleteTarget.value = null
+      toast.success('Family fee record deleted successfully.', { position: 'top-right' })
 
-      addToast({ message: 'Record deleted.' })
+
     })
     .finally(() => (isDeleting.value = false))
 }
@@ -699,8 +662,9 @@ function confirmDeleteBulk() {
 
       // close immediately
       showDeleteBulkModal.value = false
+      toast.success('Selected family fee records deleted successfully.', { position: 'top-right' }) 
 
-      addToast({ message: `Deleted ${ids.length} record(s).` })
+
     })
     .finally(() => (isDeleting.value = false))
 }

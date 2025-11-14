@@ -58,6 +58,41 @@ export const update_student_fee_record = (id, payload) => api.put(`student-fee-r
 export const delete_student_fee_record = (id) => api.delete(`student-fee-record/${id}`); 
 
 
+// GET http://localhost:8080/api/payments
+
+// PAYMENTS APIs
+export const get_payments = () => api.get("payments");  
+export const create_payment = (payload) => api.post("payments", payload);
+export const delete_payment = (id) => api.delete(`payments/delete/${id}`); 
+
+
+// FAMILY APIs
+
+export const get_families = () => api.get("families");
+export const create_family = (payload) => api.post("families", payload);  
+export const update_family = (id, payload) => api.put(`families/${id}`, payload); 
+export const delete_family = (id) => api.delete(`families/${id}`);  
+
+
+
+// FAMILY FEES APIs
+export const get_family_fee_rec = () => api.get("family-fees");
+export const create_family_fee_rec = (payload) => api.post("family-fees", payload); 
+export const delete_family_fee_rec = (id) => api.delete(`family-fees/${id}`);  
+
+
+
+
+// FAMILY PAYMENTS APIs
+
+
+export const get_family_payments = () => api.get("family-payments");
+export const create_family_payment = (payload) => api.post("family-payments", payload);
+export const delete_family_payment = (id) => api.delete(`family-payments/${id}`);
+
+
+
+
 
 
 

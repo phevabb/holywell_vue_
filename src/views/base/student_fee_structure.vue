@@ -480,25 +480,50 @@ function submitForm() {
 }
 
 /* ---------- Delete ---------- */
-function confirmDeleteSingle() {
+async function confirmDeleteSingle() {
   if (!deleteTarget.value) return
-  isDeleting.value = true
 
-  feeStructureApi
-    .deleteFeeStructure(deleteTarget.value.id)
-    .then(() => {
-      feeStructures.value = feeStructures.value.filter(r => r.id !== deleteTarget.value.id)
-      selectedIds.value = selectedIds.value.filter(id => id !== deleteTarget.value.id)
-      closeDeleteSingleModal()
+  isDeleting.value = true
+  const recordName = deleteTarget.value.name || `ID ${deleteTarget.value.id}`
+
+  try {
+    const id = deleteTarget.value.id
+    await feeStructureApi.deleteFeeStructure(id)
+
+    feeStructures.value = feeStructures.value.filter(r => r.id !== id)
+    selectedIds.value = selectedIds.value.filter(selectedId => selectedId !== id)
+    closeDeleteSingleModal()
+
+    toast.success(`Fee structure deleted successfully.`, {
+      position: 'top-right',
     })
-    .catch((err) => {
-      console.error('Delete failed:', err)
-    })
-    .finally(() => {
-      isDeleting.value = false
-      toast.success('Fee structure deleted successfully.', { position: 'top-right' })
-    })
+  } catch (error) {
+    console.error('Delete failed:', error)
+
+    // Extract associated record name if backend provides it
+    const associatedRecordName =
+      error.response?.data?.associatedRecordName ||
+      "a linked student's fee record"
+
+    let message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
+      error.message ||
+      `Cannot delete this structure because it is linked to ${associatedRecordName}. Please delete the associated record first.`
+
+    // Override for FK constraint errors
+    if (message.includes('violates foreign key constraint')) {
+      message = `Cannot delete this structure because it is linked to ${associatedRecordName}. Please delete the associated record first.`
+    }
+
+    toast.error(message, { position: 'top-right' })
+  } finally {
+    isDeleting.value = false
+  }
 }
+
+
 
 
 /* ---------- Init ---------- */

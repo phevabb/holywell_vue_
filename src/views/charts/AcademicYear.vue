@@ -192,7 +192,8 @@ const confirmDelete = async () => {
     toast.success(`${yearToDelete.value.name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
     console.error('Error deleting year:', error.response?.data || error)
-    toast.error('Failed to delete year. Please try again.', { position: 'top-right' })
+    toast.error('Cannot delete this academic year because it is linked to other records.', { position: 'top-right' })
+
   } finally {
     loading.value = false
     yearToDelete.value = null

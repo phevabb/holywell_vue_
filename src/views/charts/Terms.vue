@@ -153,11 +153,27 @@ const fetchTerms = async () => {
     const response = await get_terms()
     terms.value = response.data
   } catch (err) {
-    toast.error('Failed to fetch terms.', { position: 'top-right' })
+    let message = 'Failed to fetch terms.'
+
+    // Try to extract backend message
+    const backendMsg = err.response?.data?.message || err.response?.data?.error
+    if (backendMsg) {
+      message = `Failed to fetch terms: ${backendMsg}`
+    }
+
+    // Detect common cases
+    if (!err.response) {
+      message = 'Cannot connect to server. Please check your internet.'
+    } else if (err.response.status === 500) {
+      message = 'Server error while loading terms.'
+    }
+
+    toast.error(message, { position: 'top-right' })
   } finally {
     loading.value = false
   }
 }
+
 
 const fetchAcademicYears = async () => {
   academicYearsLoading.value = true
@@ -165,7 +181,7 @@ const fetchAcademicYears = async () => {
     const response = await get_academic_years()
     academicYears.value = response.data
   } catch (err) {
-    toast.error('Failed to load academic years.', { position: 'top-right' })
+    
   } finally {
     academicYearsLoading.value = false
   }
@@ -254,7 +270,8 @@ const confirmDelete = async () => {
     toast.success(`${termToDelete.value.name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
     console.error('Error deleting term:', error.response?.data || error)
-    toast.error('Failed to delete term. Please try again.', { position: 'top-right' })
+   toast.error('Cannot delete this term because it is linked to other records.', { position: 'top-right' })
+
   } finally {
     loading.value = false
     termToDelete.value = null

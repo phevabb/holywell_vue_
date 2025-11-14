@@ -93,12 +93,7 @@
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
-                      <CButton color="info" variant="outline" @click="openMembersModal(row)">
-                        Members
-                      </CButton>
-                      <CButton color="secondary" variant="outline" @click="openEditModal(row)">
-                        Edit
-                      </CButton>
+                     
                       <CButton color="danger" variant="outline" @click="openSingleDeleteConfirm(row)">
                         Delete
                       </CButton>
@@ -277,115 +272,94 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 
-/**
- * Simulated API aligned with Family:
- * Family { id, name, members: Array<{ id, fullName }> }
- * Students are the eligible "members".
- */
+import { st, get_families, create_family, update_family, delete_family } from '../../services/api'
+import {useToast} from 'vue-toastification'
+
+const toast = useToast()
+
 const familyApi = (() => {
-  // Simulated students
-  const STUDENTS = [
-    { id: 501, fullName: 'Ama Boateng' },
-    { id: 502, fullName: 'Kojo Mensah' },
-    { id: 503, fullName: 'Yaw Owusu' },
-    { id: 504, fullName: 'Akosua Mensimah' },
-    { id: 505, fullName: 'Kweku Asare' },
-    { id: 506, fullName: 'Abena Serwaa' },
-  ]
-
-  let _idCounter = 3
-  let _data = [
-    { id: 1, name: 'Boateng Family', members: [STUDENTS[0], STUDENTS[5]] },
-    { id: 2, name: 'Mensah Family', members: [STUDENTS[1], STUDENTS[3]] },
-    { id: 3, name: 'Owusu Family', members: [STUDENTS[2]] },
-  ]
-
   const clone = (x) => JSON.parse(JSON.stringify(x))
-  const existsByName = (name, excludeId = null) => {
-    const n = String(name || '').trim().toLowerCase()
-    return _data.some(f => f.name.trim().toLowerCase() === n && String(f.id) !== String(excludeId ?? ''))
-  }
-  const studentsByIds = (ids) => {
-    const set = new Set((ids || []).map((v) => String(v)))
-    return STUDENTS.filter(s => set.has(String(s.id)))
-  }
 
   return {
-    listFamilies() {
-      return new Promise((resolve) => setTimeout(() => resolve(clone(_data)), 400))
+    async listFamilies() {
+      try {
+        const response = await get_families()
+        return clone(response.data || [])
+      } catch (error) {
+        console.error('Error fetching families:', error)
+        throw error
+      }
     },
-    listStudents() {
-      return new Promise((resolve) => setTimeout(() => resolve(clone(STUDENTS)), 300))
-    },
-    createFamily(payload /* { name, memberIds: string[]|number[] } */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const name = String(payload?.name || '').trim()
-          if (!name) return reject(new Error('Family name is required'))
-          if (name.length > 100) return reject(new Error('Name must be at most 100 characters'))
-          if (existsByName(name)) return reject(new Error('Family name must be unique'))
 
-          _idCounter += 1
-          const members = studentsByIds(payload?.memberIds || [])
-          const created = { id: _idCounter, name, members }
-          _data = [..._data, created]
-          resolve(clone(created))
-        }, 450)
-      })
+    async listStudents() {
+      try {
+        const response = await st()
+        return clone(response.data || [])
+      } catch (error) {
+        console.error('Error fetching students:', error)
+        throw error
+      }
     },
-    updateFamily(id, payload /* { name, memberIds } */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const idx = _data.findIndex(r => String(r.id) === String(id))
-          if (idx === -1) return reject(new Error('Record not found'))
 
-          const toUpdate = { ..._data[idx] }
-          if (payload?.name !== undefined) {
-            const name = String(payload?.name || '').trim()
-            if (!name) return reject(new Error('Family name is required'))
-            if (name.length > 100) return reject(new Error('Name must be at most 100 characters'))
-            if (existsByName(name, id)) return reject(new Error('Family name must be unique'))
-            toUpdate.name = name
-          }
-          if (payload?.memberIds !== undefined) {
-            toUpdate.members = studentsByIds(payload.memberIds)
-          }
+    async createFamily(payload /* { name, memberIds } */) {
+      try {
+        const response = await create_family(payload)
+        return clone(response.data || response)
+      } catch (error) {
+        console.error('Error creating family:', error)
+        throw error
+      }
+    },
 
-          _data.splice(idx, 1, toUpdate)
-          resolve(clone(toUpdate))
-        }, 450)
-      })
+    async updateFamily(id, payload /* { name, memberIds } */) {
+      try {
+        const response = await update_family(id, payload)
+        return clone(response.data || response)
+      } catch (error) {
+        console.error('Error updating family:', error)
+        throw error
+      }
     },
-    updateFamilyMembers(id, memberIds /* number[]|string[] */) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const idx = _data.findIndex(r => String(r.id) === String(id))
-          if (idx === -1) return reject(new Error('Record not found'))
-          const updated = { ..._data[idx], members: studentsByIds(memberIds) }
-          _data.splice(idx, 1, updated)
-          resolve(clone(updated))
-        }, 350)
-      })
+
+    async updateFamilyMembers(id, memberIds /* number[]|string[] */) {
+      try {
+        const payload = { memberIds }
+        const response = await update_family(id, payload)
+        return clone(response.data || response)
+      } catch (error) {
+        console.error('Error updating family members:', error)
+        throw error
+      }
     },
-    deleteFamily(id) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          _data = _data.filter(r => String(r.id) !== String(id))
-          resolve({ success: true })
-        }, 320)
-      })
+
+    async deleteFamily(id) {
+      try {
+        const response = await delete_family(id)
+        toast.success('Family deleted successfully.')
+        return { success: true, ...(response.data || {}) }
+      } catch (error) {
+        console.error('Error deleting family:', error)
+        throw error
+      }
     },
-    deleteFamilies(ids /* number[] */) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const idSet = new Set(ids.map(String))
-          _data = _data.filter(r => !idSet.has(String(r.id)))
-          resolve({ success: true, deleted: ids.length })
-        }, 480)
-      })
+
+    async deleteFamilies(ids /* number[] */) {
+      try {
+        const results = await Promise.allSettled(ids.map(id => delete_family(id)))
+
+        const successCount = results.filter(r => r.status === 'fulfilled').length
+        const failCount = results.filter(r => r.status === 'rejected').length
+
+        return { success: failCount === 0, deleted: successCount, failed: failCount }
+      } catch (error) {
+        console.error('Error deleting multiple families:', error)
+        throw error
+      }
     },
   }
 })()
+
+
 
 /* ---------- State ---------- */
 const isLoading = ref(false)
@@ -461,10 +435,9 @@ const filteredStudentOptions = computed(() => {
 
 /* ---------- Helpers ---------- */
 function previewMembers(members) {
-  const names = (members || []).map(m => m.fullName)
-  if (names.length <= 2) return names.join(', ')
-  return `${names.slice(0, 2).join(', ')} +${names.length - 2} more`
+  return (members || []).map(m => m.fullName).join(', ')
 }
+
 
 function resetForm() {
   formFamily.name = ''
@@ -603,7 +576,8 @@ function submitForm() {
         families.value = [...families.value, created]
         showFormModal.value = false
         resetForm()
-        addToast({ message: 'Family added.' })
+        toast.success('Family created successfully.')
+
       })
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to add family.'))
       .finally(done)
@@ -633,21 +607,44 @@ function submitMembersUpdate() {
 }
 
 /* ---------- Delete (Single/Bulk) ---------- */
-function confirmDeleteSingle() {
+async function confirmDeleteSingle() {
   if (!deleteTarget.value) return
+
   isDeleting.value = true
-  familyApi
-    .deleteFamily(deleteTarget.value.id)
-    .then(() => {
-      families.value = families.value.filter(r => r.id !== deleteTarget.value.id)
-      selectedIds.value = selectedIds.value.filter(id => id !== deleteTarget.value.id)
-      // ✅ close modal
-      showDeleteSingleModal.value = false
-      deleteTarget.value = null
-      addToast({ message: 'Family deleted.' })
-    })
-    .finally(() => (isDeleting.value = false))
+  const familyId = deleteTarget.value.id
+  const familyName = deleteTarget.value.name
+
+  console.log("Deleting family ID:", familyId)
+
+  try {
+    const response = await delete_family(familyId)
+    console.log("Delete response:", response)
+
+    // Remove from local list
+    families.value = families.value.filter(f => f.id !== familyId)
+    selectedIds.value = selectedIds.value.filter(id => id !== familyId)
+
+    toast.success(`Family "${familyName}" deleted successfully.`, { position: 'top-right' })
+  } catch (err) {
+    console.error('Error deleting family:', err)
+
+    let message = `Failed to delete "${familyName}". Connected to another record`
+    
+    // Detect foreign key / constraint errors from backend
+    const backendMsg = err.response?.data?.message || err.response?.data?.error
+    if (backendMsg?.toLowerCase().includes('foreign key') || backendMsg?.toLowerCase().includes('constraint')) {
+      message = `Cannot delete "${familyName}" because it is linked to a student or record. Remove the associated record first.`
+    }
+
+    toast.error(message, { position: 'top-right' })
+  } finally {
+    showDeleteSingleModal.value = false
+    deleteTarget.value = null
+    isDeleting.value = false
+  }
 }
+
+
 
 function confirmDeleteBulk() {
   const ids = [...selectedIds.value]
