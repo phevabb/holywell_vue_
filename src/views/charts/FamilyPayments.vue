@@ -90,6 +90,35 @@
     </CCol>
   </CRow>
 
+   <!-- Modal -->
+<CModal :visible="showDeleteSingleModal" @close="closeDeleteSingleModal">
+  <CModalHeader>
+    <CModalTitle>Delete Fee Structure</CModalTitle>
+  </CModalHeader>
+
+  <CModalBody>
+    Are you sure you want to delete
+    <strong>
+      {{ deleteTarget?.familyFeeRecord?.family?.name }}
+      -
+      {{ deleteTarget?.familyFeeRecord?.term?.name }}
+      -
+      {{ deleteTarget?.familyFeeRecord?.academicYear?.name }}
+    </strong>
+    payment?
+  </CModalBody>
+
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="closeDeleteSingleModal" :disabled="isDeleting">
+      Cancel
+    </CButton>
+    <CButton color="danger" @click="handleDeletePayment" :disabled="isDeleting">
+      <CSpinner size="sm" v-if="isDeleting" class="me-2" />Delete
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
   <!-- Modal -->
   <CModal :visible="showFormModal" @close="closeFormModal">
     <CModalHeader>
@@ -99,7 +128,7 @@
       <div class="mb-3">
         <CFormLabel for="familyFeeRecord">Family Fee Record</CFormLabel>
         <CFormSelect v-model="form.familyFeeRecordId">
-          <option disabled value="">Select Family</option>
+          <option disabled value="" selected>Select Family</option>
           <option v-for="record in familyFeeRecords" :key="record.id" :value="record.id">
             {{ record.family.name }} - {{ record.term.name }} - {{ record.academicYear.name }}
           </option>
@@ -128,56 +157,149 @@ import {
   CTable, CTableHead, CTableBody, CTableRow, CTableHeaderCell, CTableDataCell
 } from '@coreui/vue'
 
-// Simulated FamilyFeeRecords
-const familyFeeRecords = ref([
-  {
-    id: 101,
-    family: { name: 'Aidoo Family' },
-    term: { name: 'Term 1' },
-    academicYear: { name: '2025/2026' },
-  },
-  {
-    id: 102,
-    family: { name: 'Mensah Family' },
-    term: { name: 'Term 2' },
-    academicYear: { name: '2025/2026' },
-  },
-])
 
-// Simulated Payments Store
-let paymentsStore = []
-let nextId = 1
 
-const listPayments = async () => new Promise(resolve => setTimeout(() => resolve([...paymentsStore]), 300))
+
+import {
+  get_family_payments,
+  create_family_payment,
+  delete_family_payment,
+  get_family_fee_rec
+} from '@/services/api'
+
+import { useToast } from 'vue-toastification'
+const toast = useToast()
+
+
+const isDeleting = ref(false)
+
+const handleDeletePayment = async () => {
+  if (!deleteTarget.value) return
+
+  isDeleting.value = true
+  try {
+    await deletePayment(deleteTarget.value.id)  // API call & local update
+    closeDeleteSingleModal()                     // close the modal
+  } catch (err) {
+    // error is already handled in deletePayment
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+
+
+
+// REAL Family Fee Records
+const familyFeeRecords = ref([])
+
+// Load Family Fee Records from API
+const fetchFamilyFeeRecords = async () => {
+  try {
+    const res = await get_family_fee_rec()
+    familyFeeRecords.value = res.data || []
+  } catch (err) {
+    toast.error('Failed to load family fee records.', { position: 'top-right' })
+  }
+}
+
+// REAL Payments Store
+const listPayments = async () => {
+  try {
+    const res = await get_family_payments()
+    return res.data || []
+  } catch (err) {
+    toast.error('Failed to fetch payments.', { position: 'top-right' })
+    return []
+  }
+}
+
 const createPayment = async (data) => {
-  const record = familyFeeRecords.value.find(r => r.id === data.familyFeeRecordId)
-  const newPayment = {
-    id: nextId++,
-    ...data,
-    familyFeeRecord: record,
-  }
-  paymentsStore.push(newPayment)
-  return new Promise(resolve => setTimeout(() => resolve(newPayment), 300))
-}
-const updatePayment = async (id, data) => {
-  const index = paymentsStore.findIndex(p => p.id === id)
-  const record = familyFeeRecords.value.find(r => r.id === data.familyFeeRecordId)
-  if (index !== -1) {
-    paymentsStore[index] = {
-      ...paymentsStore[index],
-      ...data,
-      familyFeeRecord: record,
+  try {
+    const res = await create_family_payment(data)
+    toast.success('Payment added.', { position: 'top-right' })
+    return res.data
+  } catch (err) {
+    const backendMsg = err.response?.data?.message?.toLowerCase() || ''
+    let msg = 'Failed to add payment.'
+
+    if (backendMsg.includes('constraint') || backendMsg.includes('foreign')) {
+      msg = 'Cannot add payment because it is linked to missing or invalid records.'
     }
+
+    toast.error(msg, { position: 'top-right' })
+    throw err
   }
-  return new Promise(resolve => setTimeout(() => resolve(paymentsStore[index]), 300))
 }
+
+const updatePayment = async (id, data) => {
+  try {
+    const res = await create_family_payment(id, data) // If you have PUT/PATCH, update here
+    toast.success('Payment updated.', { position: 'top-right' })
+    return res.data
+  } catch (err) {
+    const backendMsg = err.response?.data?.message?.toLowerCase() || ''
+    let msg = 'Failed to update payment.'
+
+    if (backendMsg.includes('constraint') || backendMsg.includes('foreign')) {
+      msg = 'This payment is linked to another record and cannot be updated.'
+    }
+
+    toast.error(msg, { position: 'top-right' })
+    throw err
+  }
+}
+
 const deletePayment = async (id) => {
-  paymentsStore = paymentsStore.filter(p => p.id !== id)
-  return new Promise(resolve => setTimeout(() => resolve(true), 300))
+  console.log("the id is:", id)
+  try {
+    await delete_family_payment(id)
+    // Remove from local payments array
+    payments.value = payments.value.filter(p => p.id !== id)
+
+    // Also remove from selectedIds if it was selected
+    selectedIds.value = selectedIds.value.filter(sid => sid !== id)
+
+    toast.success('Payment deleted.', { position: 'top-right' })
+    return true
+  } catch (err) {
+    const backendMsg = err.response?.data?.message?.toLowerCase() || ''
+    let msg = 'Failed to delete payment.'
+
+    if (backendMsg.includes('constraint') || backendMsg.includes('foreign')) {
+      msg = 'This payment cannot be deleted because it is linked to other records.'
+    }
+
+    toast.error(msg, { position: 'top-right' })
+    throw err
+  }
 }
+
+
 const bulkDeletePayments = async (ids) => {
-  paymentsStore = paymentsStore.filter(p => !ids.includes(p.id))
-  return new Promise(resolve => setTimeout(() => resolve(true), 300))
+  try {
+    await Promise.all(ids.map(id => delete_family_payment(id)))
+    toast.success('Selected payments deleted.', { position: 'top-right' })
+    return true
+  } catch (err) {
+    const backendMsg = err.response?.data?.message?.toLowerCase() || ''
+    let msg = 'Failed to delete some selected payments.'
+
+    if (backendMsg.includes('constraint') || backendMsg.includes('foreign')) {
+      msg = 'Some payments are linked to other records and cannot be deleted.'
+    }
+
+    toast.error(msg, { position: 'top-right' })
+    throw err
+  }
+}
+
+const deleteTarget = ref(null)
+
+
+function closeDeleteSingleModal() {
+  showDeleteSingleModal.value = false
+  deleteTarget.value = null
 }
 
 // Component State
@@ -208,7 +330,11 @@ const fetchPayments = async () => {
   }
 }
 
-onMounted(fetchPayments)
+onMounted(async () => {
+  await fetchFamilyFeeRecords()
+  await fetchPayments()
+})
+
 
 const filteredPayments = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -271,19 +397,21 @@ const submitForm = async () => {
   }
 }
 
+const showDeleteSingleModal = ref(false)
+
 const openSingleDeleteConfirm = async (payment) => {
-  if (confirm(`Delete payment for ${payment.familyFeeRecord?.family?.name}?`)) {
-    await deletePayment(payment.id)
-    await fetchPayments()
-  }
+  deleteTarget.value = payment
+  showDeleteSingleModal.value = true
+ /* await deletePayment(payment.id) */ 
+ /* await fetchPayments() */ 
 }
 
+
 const openBulkDeleteConfirm = async () => {
-  if (confirm(`Delete ${selectedIds.value.length} selected payments?`)) {
-    await bulkDeletePayments(selectedIds.value)
-    selectedIds.value = []
-    await fetchPayments()
-  }
+  await bulkDeletePayments(selectedIds.value)
+selectedIds.value = []
+await fetchPayments()
+
 }
 </script>
 

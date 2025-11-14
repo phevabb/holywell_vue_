@@ -75,7 +75,7 @@ export const delete_family = (id) => api.delete(`families/${id}`);
 
 
 
-// FAMILY FEES APIs
+// FAMILY FEES RECS APIs
 export const get_family_fee_rec = () => api.get("family-fees");
 export const create_family_fee_rec = (payload) => api.post("family-fees", payload); 
 export const delete_family_fee_rec = (id) => api.delete(`family-fees/${id}`);  
