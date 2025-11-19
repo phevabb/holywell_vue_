@@ -19,6 +19,10 @@
                 class="shadow-sm border-primary"
                 style="min-width: 260px;"
               />
+
+              
+
+
               <CButton color="light" class="text-primary border-primary" size="sm" @click="openAddModal">
                 <CIcon icon="cil-user-follow" class="me-1" /> Add Student
               </CButton>
@@ -66,14 +70,14 @@
   <!-- Data rows -->
   <CTableRow v-else v-for="(student, idx) in filteredStudents" :key="student.id">
     <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
-    <CTableDataCell>{{ student.fullName }}</CTableDataCell>
+    <CTableDataCell>{{ student.user.full_name }}</CTableDataCell>
     <CTableDataCell>{{ student.currentClass }}</CTableDataCell>
-    <CTableDataCell>{{ student.contactOfFather }}</CTableDataCell>
-    <CTableDataCell>{{ student.contactOfMother }}</CTableDataCell>
-    <CTableDataCell>{{ student.allergicFoods ? student.allergicFoods : '—' }}</CTableDataCell>
+    <CTableDataCell>{{ student.contact_of_father }}</CTableDataCell>
+    <CTableDataCell>{{ student.contact_of_mother }}</CTableDataCell>
+    <CTableDataCell>{{ student.allergic_foods ? student.allergic_foods : '—' }}</CTableDataCell>
     <CTableDataCell>
-      <CBadge :color="student.active ? 'success' : 'secondary'">
-        {{ student.active ? 'Active' : 'Inactive' }}
+      <CBadge :color="student.user.is_active ? 'success' : 'secondary'">
+        {{ student.user.is_active ? 'Active' : 'Inactive' }}
       </CBadge>
     </CTableDataCell>
     <CTableDataCell class="text-end">
@@ -100,7 +104,7 @@
     <CModalTitle>Confirm Deletion</CModalTitle>
   </CModalHeader>
   <CModalBody>
-    Are you sure you want to delete <strong>{{ studentToDelete?.fullName }}</strong>?
+    Are you sure you want to delete <strong>{{ studentToDelete?.full_name }}</strong>?
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
@@ -124,7 +128,7 @@
           <div class="row g-3">
             <div class="col-md-6">
               <CFormLabel>Full Name</CFormLabel>
-              <CFormInput v-model="form.fullName" />
+              <CFormInput v-model="form.full_name" />
             </div>
             <div class="col-md-3">
               <CFormLabel>Gender</CFormLabel>
@@ -136,7 +140,7 @@
             </div>
             <div class="col-md-3">
               <CFormLabel>Date of Birth</CFormLabel>
-              <CFormInput type="date" v-model="form.dateOfBirth" />
+              <CFormInput type="date" v-model="form.date_of_birth" />
             </div>
             <div class="col-md-6">
               <CFormLabel>Nationality</CFormLabel>
@@ -177,21 +181,21 @@
           <div class="row g-3">
             <div class="col-md-6">
               <CFormLabel>Name of Father</CFormLabel>
-              <CFormInput v-model="form.nameOfFather" />
+              <CFormInput v-model="form.name_of_father" />
               <CFormLabel>Occupation of Father</CFormLabel>
-              <CFormInput v-model="form.occupationOfFather" />
+              <CFormInput v-model="form.occupation_of_father" />
               <CFormLabel>Contact of Father</CFormLabel>
-              <CFormInput v-model="form.contactOfFather" />
+              <CFormInput v-model="form.contact_of_father" />
               <CFormLabel>Nationality of Father</CFormLabel>
               <CFormInput v-model="form.nationalityOfFather" />
             </div>
             <div class="col-md-6">
               <CFormLabel>Name of Mother</CFormLabel>
-              <CFormInput v-model="form.nameOfMother" />
+              <CFormInput v-model="form.name_of_mother" />
               <CFormLabel>Occupation of Mother</CFormLabel>
-              <CFormInput v-model="form.occupationOfMother" />
+              <CFormInput v-model="form.occupation_of_mother" />
               <CFormLabel>Contact of Mother</CFormLabel>
-              <CFormInput v-model="form.contactOfMother" />
+              <CFormInput v-model="form.contact_of_mother" />
               <CFormLabel>Nationality of Mother</CFormLabel>
               <CFormInput v-model="form.nationalityOfMother" />
             </div>
@@ -332,10 +336,10 @@ const isEdit = ref(false)
 const currentStudent = ref(null)
 
 const form = ref({
-  fullName: '', gender: '', nationality: '', dateOfBirth: '', currentClass: '', familyId: '',
+  full_name: '', gender: '', nationality: '', date_of_birth: '', currentClass: '', familyId: '',
   immunized: false, allergies: false, allergicFoods: '', hasPeculiarHealthIssues: false, healthIssues: '',
-  nameOfFather: '', occupationOfFather: '', contactOfFather: '', nationalityOfFather: '',
-  nameOfMother: '', occupationOfMother: '', contactOfMother: '', nationalityOfMother: '',
+  name_of_father: '', occupation_of_father: '', contact_of_father: '', nationalityOfFather: '',
+  name_of_mother: '', occupation_of_mother: '', contact_of_mother: '', nationalityOfMother: '',
   lastSchoolAttended: '', classSeekingAdmissionTo: '', houseNumber: '', otherRelatedInfo: '',
   active: true, staff: false, role: 'STUDENT'
 })
@@ -344,13 +348,13 @@ const form = ref({
 
 const filteredStudents = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
-  return term ? students.value.filter(s => s.fullName.toLowerCase().includes(term)) : students.value
+  return term ? students.value.filter(s => s.full_name.toLowerCase().includes(term)) : students.value
 })
 
 const openAddModal = () => {
   isEdit.value = false
   currentStudent.value = null
-  form.value = { ...form.value, fullName: '', gender: '', nationality: '', dateOfBirth: '', currentClass: '', familyId: '' }
+  form.value = { ...form.value, full_name: '', gender: '', nationality: '', date_of_birth: '', currentClass: '', familyId: '' }
   showFormModal.value = true
 }
 
@@ -376,13 +380,13 @@ const submitForm = async () => {
     form.value.gender = form.value.gender || 'MALE';
     form.value.currentClass = form.value.currentClass || 'CRECHE';
     form.value.nationality = form.value.nationality || 'Ghanaian';
-    form.value.dateOfBirth = form.value.dateOfBirth || '2002-02-02';
+    form.value.date_of_birth = form.value.date_of_birth || '2002-02-02';
 
     // ✅ Required field validation
     const requiredFields = [
-      { field: 'fullName', label: 'Full Name' },
-      { field: 'contactOfFather', label: 'Contact of Father' },
-      { field: 'contactOfMother', label: 'Contact of Mother' },
+      { field: 'full_name', label: 'Full Name' },
+      { field: 'contact_of_father', label: 'Contact of Father' },
+      { field: 'contact_of_mother', label: 'Contact of Mother' },
     ];
 
     for (const { field, label } of requiredFields) {
@@ -472,7 +476,7 @@ const confirmDelete = async () => {
   try {
     await delete_student(studentToDelete.value.id)
     students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
-    toast.success(`${studentToDelete.value.fullName} deleted successfully!`, { position: 'top-right' })
+    toast.success(`${studentToDelete.value.full_name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
     console.error('Error deleting student:', error.response?.data || error)
     toast.error('Failed to delete student. Please try again.', { position: 'top-right' })

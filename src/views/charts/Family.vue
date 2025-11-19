@@ -435,7 +435,7 @@ const filteredStudentOptions = computed(() => {
 
 /* ---------- Helpers ---------- */
 function previewMembers(members) {
-  return (members || []).map(m => m.fullName).join(', ')
+  return (members || []).map(m => m.full_name).join(', ')
 }
 
 
@@ -473,17 +473,24 @@ function toggleSelectAll() {
 }
 
 /* ---------- Loaders ---------- */
-function loadFamilies() {
+async function loadFamilies() {
   isLoading.value = true
   errorMessage.value = ''
-  return familyApi
-    .listFamilies()
-    .then(rows => (families.value = rows))
-    .catch(err => (errorMessage.value = err?.message || 'Failed to load families.'))
-    .finally(() => (isLoading.value = false))
+  try {
+    try {
+      const rows = await familyApi.listFamilies()
+      console.log("families print", rows)
+      return (families.value = rows)
+    } catch (err) {
+      return (errorMessage.value = err?.message || 'Failed to load families.')
+    }
+  } finally {
+    return (isLoading.value = false)
+  }
 }
-function loadStudents() {
-  return familyApi.listStudents().then(rows => (students.value = rows))
+async function loadStudents() {
+  const rows = await familyApi.listStudents()
+  return (students.value = rows)
 }
 
 /* ---------- Modal handlers (Add/Edit) ---------- */

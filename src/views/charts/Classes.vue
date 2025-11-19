@@ -51,7 +51,7 @@
       <CTableRow v-else v-for="(cls, idx) in filteredClasses" :key="cls.id">
         <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
         <CTableDataCell>{{ cls.name }}</CTableDataCell>
-        <CTableDataCell>{{ cls.staff?.fullName || '—' }}</CTableDataCell>
+        <CTableDataCell>{{ cls.staff.user?.full_name || '—' }}</CTableDataCell>
         <CTableDataCell class="text-end">
           <CButtonGroup size="sm">
             <CButton color="secondary" variant="outline" @click="openEditModal(cls)">Edit</CButton>

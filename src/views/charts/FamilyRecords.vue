@@ -79,19 +79,20 @@
                     <CFormCheck v-model="selectedIds" :value="row.id" aria-label="Select row" />
                   </CTableDataCell>
 
+
                   <CTableHeaderCell scope="row">{{ idx + 1 }}</CTableHeaderCell>
                   <CTableDataCell>{{ row.family?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.term?.name }}</CTableDataCell>
-                  <CTableDataCell>{{ row.academicYear?.name }}</CTableDataCell>
-                  <CTableDataCell class="text-end">{{ formatAmount(row.amountToPay) }}</CTableDataCell>
-                  <CTableDataCell class="text-end">{{ formatAmount(row.amountPaid) }}</CTableDataCell>
+                  <CTableDataCell>{{ row.academic_year?.name}}</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ formatAmount(row.amount_to_pay) }}</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ formatAmount(row.amount_paid) }}</CTableDataCell>
                   <CTableDataCell class="text-end">{{ formatAmount(row.balance) }}</CTableDataCell>
                   <CTableDataCell>
-                    <CBadge :color="row.isFullyPaid ? 'success' : 'warning'">
-                      {{ row.isFullyPaid ? 'Yes' : 'No' }}
+                    <CBadge :color="row.is_fully_paid? 'success' : 'warning'">
+                      {{ row.is_fully_paid? 'Yes' : 'No' }}
                     </CBadge>
                   </CTableDataCell>
-                  <CTableDataCell>{{ formatDateTime(row.dateCreated) }}</CTableDataCell>
+                  <CTableDataCell>{{ formatDateTime(row.date_created) }}</CTableDataCell>
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
@@ -254,6 +255,8 @@ const ffrApi = (() => {
         get_families(),
         get_family_fee_rec()
       ])
+
+   
 
       AY = years.data || []
       TM = terms.data || []
@@ -532,15 +535,25 @@ function loadLookups() {
     ffrApi.listAcademicYears().then(x => (academicYears.value = x)),
   ])
 }
-function loadRecords() {
+async function loadRecords() {
   isLoading.value = true
   errorMessage.value = ''
-  return ffrApi
-    .listRecords()
-    .then(rows => (records.value = rows))
-    .catch(err => (errorMessage.value = err?.message || 'Failed to load family fee records.'))
-    .finally(() => (isLoading.value = false))
+  
+  try {
+    try {
+      const rows = await ffrApi.listRecords()
+      records.value = rows
+      console.log('Loaded print records:', rows) // PRINT HERE
+    } catch (err) {
+      errorMessage.value = err?.message || 'Failed to load family fee records.'
+      console.error('Error loading records:', err)
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
+
+
 
 /* ---------- Modal handlers ---------- */
 function openAddModal() {
@@ -675,6 +688,7 @@ onMounted(async () => {
     isLoading.value = true
     await loadLookups()
     await loadRecords()
+
   } finally {
     isLoading.value = false
   }

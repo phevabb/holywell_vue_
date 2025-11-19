@@ -66,7 +66,7 @@
                 </CTableDataCell>
                 <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
                 <CTableDataCell>
-                  {{ row.familyFeeRecord?.family?.name }} - {{ row.familyFeeRecord?.term?.name }} - {{ row.familyFeeRecord?.academicYear?.name }}
+                  {{ row.family_fee_record?.family?.name }} - {{ row.family_fee_record?.term?.name }} - {{ row.family_fee_record?.academic_year?.name }}
                 </CTableDataCell>
                 <CTableDataCell>{{ row.date }}</CTableDataCell>
                 <CTableDataCell class="text-end">{{ formatAmount(row.amount) }}</CTableDataCell>
@@ -207,6 +207,7 @@ const fetchFamilyFeeRecords = async () => {
 const listPayments = async () => {
   try {
     const res = await get_family_payments()
+    console.log("res of fam print payments", res)
     return res.data || []
   } catch (err) {
     toast.error('Failed to fetch payments.', { position: 'top-right' })
@@ -402,8 +403,7 @@ const showDeleteSingleModal = ref(false)
 const openSingleDeleteConfirm = async (payment) => {
   deleteTarget.value = payment
   showDeleteSingleModal.value = true
- /* await deletePayment(payment.id) */ 
- /* await fetchPayments() */ 
+
 }
 
 

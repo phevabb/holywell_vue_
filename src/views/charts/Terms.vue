@@ -37,7 +37,7 @@
               <CTableRow v-for="(term, idx) in filteredTerms" :key="term.id">
                 <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
                 <CTableDataCell>{{ term.name }}</CTableDataCell>
-                <CTableDataCell>{{ term.academicYear?.name || '—' }}</CTableDataCell>
+                <CTableDataCell>{{ term.academic_year.name || '—' }}</CTableDataCell>
                 <CTableDataCell class="text-end">
                   <CButtonGroup size="sm">
                     <CButton color="secondary" variant="outline" @click="openEditModal(term)">Edit</CButton>

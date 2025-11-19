@@ -86,11 +86,12 @@
                 <CTableRow v-for="(row, idx) in filteredFeeStructures" :key="row.id">
                   <CTableDataCell class="text-center">
                     <CFormCheck v-model="selectedIds" :value="row.id" aria-label="Select row" />
-                  </CTableDataCell>
+                  </CTableDataCell> 
+
 
                   <CTableHeaderCell scope="row">{{ idx + 1 }}</CTableHeaderCell>
-                  <CTableDataCell>{{ row.academicYear?.name }}</CTableDataCell>
-                  <CTableDataCell>{{ row.gradeClass?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.academic_year?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.grade_class?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.term?.name }}</CTableDataCell>
                   <CTableDataCell class="text-end">
                     {{ formatAmount(row.amount) }}
@@ -243,6 +244,7 @@ const feeStructureApi = {
   async listFeeStructures() {
     // Assuming you have an API for fetching all fee structures
     const res = await get_fee_structures()
+    console.log("this is the structdata:", res)
     return res?.data || []
   },
 
@@ -386,14 +388,20 @@ function loadReferenceData() {
     feeStructureApi.listTerms().then(x => (terms.value = x)),
   ])
 }
-function loadFeeStructures() {
+async function loadFeeStructures() {
   isLoading.value = true
   errorMessage.value = ''
-  return feeStructureApi
-    .listFeeStructures()
-    .then(rows => (feeStructures.value = rows))
-    .catch(err => (errorMessage.value = err?.message || 'Failed to load fee structures.'))
-    .finally(() => (isLoading.value = false))
+  try {
+    try {
+      const rows = await feeStructureApi
+        .listFeeStructures()
+      return (feeStructures.value = rows)
+    } catch (err) {
+      return (errorMessage.value = err?.message || 'Failed to load fee structures.')
+    }
+  } finally {
+    return (isLoading.value = false)
+  }
 }
 
 /* ---------- Modal handlers ---------- */

@@ -1,2 +1,23 @@
 work on bulk delete
 unable to select first item in drop down
+
+dropdown for filtered stuff
+
+ <div
+        v-if="filteredStudentFeeRecords && filteredStudentFeeRecords.length > 0 && recordSearch"
+        class="dropdown-menu show w-100"
+        style="max-height: 200px; overflow-y: auto;"
+      >
+        <button
+          class="dropdown-item"
+          v-for="s in filteredStudentFeeRecords"
+          :key="s.id"
+          @click="selectRecord(s)"
+        >
+          {{ s.student.fullName }} /
+          {{ s.feeStructure.gradeClass.name }} /
+          {{ s.feeStructure.term.name }} /
+          {{ s.feeStructure.academicYear.name }}
+        </button>
+      </div>
+    </div>

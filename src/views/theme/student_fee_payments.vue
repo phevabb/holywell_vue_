@@ -96,10 +96,10 @@
                   </CTableDataCell>
 
                   <CTableHeaderCell scope="row">{{ idx + 1 }}</CTableHeaderCell>
-                  <CTableDataCell>{{ row.studentFeeRecord?.student?.fullName }}</CTableDataCell>
-                  <CTableDataCell>{{ row.studentFeeRecord?.feeStructure?.gradeClass?.name }}</CTableDataCell>
-                  <CTableDataCell>{{ row.studentFeeRecord?.feeStructure?.term?.name }}</CTableDataCell>
-                  <CTableDataCell>{{ row.studentFeeRecord?.feeStructure?.academicYear?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.student_fee_record?.student?.user?.full_name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.student_fee_record?.fee_structure?.grade_class?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.student_fee_record?.fee_structure?.term?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.student_fee_record?.fee_structure?.academic_year?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.date }}</CTableDataCell>
                   <CTableDataCell class="text-end">
                     {{ formatAmount(row.amount) }}
@@ -144,19 +144,39 @@
     </CModalHeader>
     <CModalBody>
       <div class="mb-3">
+
+
         <CFormLabel for="sfr">Student / Class / Term / AY</CFormLabel>
-        <CFormSelect id="sfr" v-model="formPayment.studentFeeRecordId">
-          <option value="" disabled selected>Select Student Fee Record</option>
-          <option
-            v-for="sfr in studentFeeRecords"
-            :key="sfr.id"
-            :value="sfr.id"
-          >
-            {{ sfr.student?.fullName }} — {{ sfr.feeStructure?.gradeClass?.name }}
-            / {{ sfr.feeStructure?.term?.name }} / {{ sfr.feeStructure?.academicYear?.name }}
-          </option>
-        </CFormSelect>
+
+        <CFormInput
+        id ="sfr"
+        v-model="recordSearch"
+        placeholder="Search fee record ..."
+        @input="filterRecords"
+        autocomplete="off"        
+        />
+           <!-- Dropdown for filtered students -->
+      <div
+        v-if="filteredStudentFeeRecords && filteredStudentFeeRecords.length > 0 && recordSearch"
+        class="dropdown-menu show w-100"
+        style="max-height: 200px; overflow-y: auto;"
+      >
+        <button
+          class="dropdown-item"
+          v-for="s in filteredStudentFeeRecords"
+          :key="s.id"
+          @click="selectRecord(s)"
+        >
+          {{ s.student.fullName }} /
+          {{ s.feeStructure.gradeClass.name }} /
+          {{ s.feeStructure.term.name }} /
+          {{ s.feeStructure.academicYear.name }}
+        </button>
       </div>
+    </div>
+
+        
+     
 
       <div class="mb-3">
         <CFormLabel for="date">Date</CFormLabel>
@@ -237,7 +257,17 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { get_payments, get_student_fee_record, create_payment, delete_payment } from '../../services/api'
 
 import { useToast } from 'vue-toastification'
+import { CFormInput } from '@coreui/vue'
 const toast = useToast()
+const filteredStudentFeeRecords = ref([])
+
+function selectRecord(record){
+  formPayment.studentFeeRecordId = record.id
+  recordSearch.value = `${record.student.fullName} / ${record.feeStructure.gradeClass.name} / ${record.feeStructure.term.name} / ${record.feeStructure.academicYear.name}`
+  filteredStudentFeeRecords.value = []
+} 
+
+const recordSearch = ref('')
 /**
  * Simulated API aligned with Payment:
  * Payment { id, studentFeeRecord, date: 'YYYY-MM-DD', amount }
@@ -251,6 +281,7 @@ const paymentApi = (() => {
     async listPayments() {
       try {
         const response = await get_payments()
+        console.log("ress of paymnest", response.data)
         // Expecting backend to return: [{ id, studentFeeRecord, date, amount }, ...]
         return response.data || []
       } catch (error) {
@@ -308,6 +339,24 @@ const paymentApi = (() => {
     },
   }
 })()
+
+
+function filterRecords(){
+  const query = recordSearch.value.toLowerCase()
+  filteredStudentFeeRecords.value = studentFeeRecords.value.filter(record => {
+    const studentName = record.student?.fullName?.toLowerCase() || ''
+    const className = record.feeStructure?.gradeClass?.name?.toLowerCase() || ''
+    const termName = record.feeStructure?.term?.name?.toLowerCase() || ''
+    const academicYearName = record.feeStructure?.academicYear?.name?.toLowerCase() || ''   
+    return (
+      studentName.includes(query) ||
+      className.includes(query) ||
+      termName.includes(query) ||
+      academicYearName.includes(query)
+    )
+  })  
+
+}
 
 
 /* ---------- State ---------- */
@@ -421,17 +470,24 @@ function toggleSelectAll() {
 }
 
 /* ---------- Loaders ---------- */
-function loadStudentFeeRecords() {
-  return paymentApi.listStudentFeeRecords().then(x => (studentFeeRecords.value = x))
+async function loadStudentFeeRecords() {
+  const x = await paymentApi.listStudentFeeRecords()
+  return (studentFeeRecords.value = x)
 }
-function loadPayments() {
+async function loadPayments() {
   isLoading.value = true
   errorMessage.value = ''
-  return paymentApi
-    .listPayments()
-    .then(rows => (payments.value = rows))
-    .catch(err => (errorMessage.value = err?.message || 'Failed to load payments.'))
-    .finally(() => (isLoading.value = false))
+  try {
+    try {
+      const rows = await paymentApi
+        .listPayments()
+      return (payments.value = rows)
+    } catch (err) {
+      return (errorMessage.value = err?.message || 'Failed to load payments.')
+    }
+  } finally {
+    return (isLoading.value = false)
+  }
 }
 
 /* ---------- Modal handlers ---------- */
@@ -566,7 +622,7 @@ onMounted(async () => {
   try {
     isLoading.value = true
     const a = await get_student_fee_record()
-    console.log("tissss", a)
+    
 
     studentFeeRecords.value = a.data
 

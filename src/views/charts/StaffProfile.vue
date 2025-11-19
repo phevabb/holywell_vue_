@@ -63,14 +63,14 @@
                   <CFormCheck v-model="selectedIds" :value="row.id" />
                 </CTableDataCell>
                 <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
-                <CTableDataCell>{{ row.fullName }}</CTableDataCell>
+                <CTableDataCell>{{ row.user.full_name }}</CTableDataCell>
                 
-                <CTableDataCell>{{ row.gender }}</CTableDataCell>
-                <CTableDataCell>{{ row.nationality }}</CTableDataCell>
+                <CTableDataCell>{{ row.user.gender }}</CTableDataCell>
+                <CTableDataCell>{{ row.user.nationality }}</CTableDataCell>
                 
                 <CTableDataCell>
-                  <CBadge :color="row.active ? 'success' : 'secondary'">
-                    {{ row.active ? 'Active' : 'Inactive' }}
+                  <CBadge :color="row.user.is_active ? 'success' : 'secondary'">
+                    {{ row.user.is_active ? 'Active' : 'Inactive' }}
                   </CBadge>
                 </CTableDataCell>
                 <CTableDataCell class="text-end">

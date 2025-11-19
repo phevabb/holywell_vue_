@@ -99,20 +99,23 @@
                   </CTableDataCell>
 
                   <CTableHeaderCell scope="row">{{ idx + 1 }}</CTableHeaderCell>
-                  <CTableDataCell>{{ row.student?.fullName }}</CTableDataCell>
-                  <CTableDataCell>{{ row.feeStructure?.gradeClass?.name }}</CTableDataCell>
-                  <CTableDataCell>{{ row.feeStructure?.term?.name }}</CTableDataCell>
-                  <CTableDataCell>{{ row.feeStructure?.academicYear?.name }}</CTableDataCell>
-                  <CTableDataCell class="text-end">{{ formatAmount(row.amountPaid) }}</CTableDataCell>
+                  <CTableDataCell>{{ row.student?.user?.full_name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.fee_structure?.grade_class?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.fee_structure?.term?.name }}</CTableDataCell>
+                  <CTableDataCell>{{ row.fee_structure?.academic_year?.name }}</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ formatAmount(row.amount_paid) }}</CTableDataCell>
                   <CTableDataCell class="text-end">{{ formatAmount(row.balance) }}</CTableDataCell>
                   <CTableDataCell>
-                    <CBadge :color="row.fullyPaid ? 'success' : 'warning'">
+                    <CBadge :color="row.is_fully_paid ? 'success' : 'warning'">
                       
 
-                      {{ row.fullyPaid ? 'Yes' : 'No' }}
+
+
+
+                      {{ row.is_fully_paid? 'Yes' : 'No' }}
                     </CBadge>
                   </CTableDataCell>
-                  <CTableDataCell>{{ formatDateTime(row.dateCreated) }}</CTableDataCell>
+                  <CTableDataCell>{{ formatDateTime(row.date_created) }}</CTableDataCell>
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
@@ -156,6 +159,7 @@
     <!-- Searchable Student Field -->
     <div class="mb-3 position-relative">
       <CFormLabel for="student">Student</CFormLabel>
+      
       <CFormInput
         id="student"
         v-model="studentSearch"
@@ -193,6 +197,42 @@
     </div>
 
     <!-- Amount Paid -->
+
+    <!-- Amount Paid -->
+<div class="mb-3">
+  <CFormLabel for="amount_paid">Amount Paid</CFormLabel>
+  <CFormInput
+    id="amount_paid"
+    type="number"
+    v-model="formRecord.amount_paid"
+    placeholder="Enter amount paid"
+  />
+</div>
+
+<!-- Balance (Readonly) -->
+<div class="mb-3">
+  <CFormLabel for="balance">Balance</CFormLabel>
+  <CFormInput
+    id="balance"
+    type="number"
+    :value="computedBalance"
+    readonly
+  />
+</div>
+
+<!-- Fully Paid -->
+<div class="mb-3 form-check">
+  <input
+    class="form-check-input"
+    type="checkbox"
+    id="fullyPaid"
+    v-model="formRecord.fullyPaid"
+  />
+  <label class="form-check-label" for="fullyPaid">
+    Fully Paid
+  </label>
+</div>
+
    
 
 
@@ -284,27 +324,34 @@ const studentSearch = ref('')
 
 const sfrApi = (() => {
   return {
-    listSfr() {
-      return get_student_fee_record().then(res => res.data)
+    async listSfr() {
+      const res = await get_student_fee_record()
+      console.log("fee records print", res.data)
+      return res.data
     },
-    listStudents() {
-      return st().then(res => res.data)
+    async listStudents() {
+      const res = await st()
+      return res.data
     },
-    listFeeStructures() {
-      return get_fee_structures().then(res => res.data)
+    async listFeeStructures() {
+      const res = await get_fee_structures()
+      return res.data
     },
-    createSfr(payload) {
-      return create_student_fee_record(payload).then(res => res.data)
+    async createSfr(payload) {
+      const res = await create_student_fee_record(payload)
+      return res.data
     },
-    updateSfr(id, payload) {
-      return update_student_fee_record(id, payload).then(res => res.data)
+    async updateSfr(id, payload) {
+      const res = await update_student_fee_record(id, payload)
+      return res.data
     },
-    deleteSfr(id) {
-      return delete_student_fee_record(id).then(res => res.data)
+    async deleteSfr(id) {
+      const res = await delete_student_fee_record(id)
+      return res.data
     },
-    deleteSfrBulk(ids) {
-      return Promise.all(ids.map(id => delete_student_fee_record(id)))
-        .then(() => ({ success: true, deleted: ids.length }))
+    async deleteSfrBulk(ids) {
+      await Promise.all(ids.map(id => delete_student_fee_record(id)))
+      return ({ success: true, deleted: ids.length })
     },
   }
 })()
@@ -337,7 +384,7 @@ const viewDateCreated = ref('')
 const formRecord = reactive({
   studentId: '',
   feeStructureId: '',
-  amountPaid: '',
+  amount_paid: '',
   balance: '',
   fullyPaid: false,
 })
@@ -429,7 +476,7 @@ function formatDateTime(iso) {
 function resetForm() {
   formRecord.studentId = ''
   formRecord.feeStructureId = ''
-  formRecord.amountPaid = ''
+  formRecord.amount_paid = ''
   formRecord.balance = ''
   formRecord.isFullyPaid = false
   viewDateCreated.value = ''
@@ -486,14 +533,19 @@ function loadLookups() {
     sfrApi.listFeeStructures().then(x => (feeStructures.value = x)),
   ])
 }
-function loadRecords() {
+async function loadRecords() {
   isLoading.value = true
   errorMessage.value = ''
-  return sfrApi
-    .listSfr()
-    .then(rows => (records.value = rows))
-    .catch(err => (errorMessage.value = err?.message || 'Failed to load fee records.'))
-    .finally(() => (isLoading.value = false))
+  try {
+    try {
+      const rows = await sfrApi.listSfr()
+      return (records.value = rows)
+    } catch (err) {
+      return (errorMessage.value = err?.message || 'Failed to load fee records.')
+    }
+  } finally {
+    return (isLoading.value = false)
+  }
 }
 
 /* ---------- Modal handlers ---------- */
@@ -507,7 +559,7 @@ function openEditModal(row) {
   editingId.value = row.id
   formRecord.studentId = row?.student?.id ?? ''
   formRecord.feeStructureId = row?.feeStructure?.id ?? ''
-  formRecord.amountPaid = row?.amountPaid ?? ''
+  formRecord.amount_paid = row?.amount_paid ?? ''
   formRecord.balance = row?.balance ?? ''
   formRecord.fullyPaid = !!row?.fullyPaid
   viewDateCreated.value = row?.dateCreated || ''
@@ -546,12 +598,13 @@ function submitForm() {
   isSubmitting.value = true
 
   const payload = {
-    studentId: formRecord.studentId,
-    feeStructureId: formRecord.feeStructureId,
-    amountPaid: formRecord.amountPaid,
-    balance: formRecord.balance,
-    isFullyPaid: !!formRecord.isFullyPaid,
-  }
+  studentId: formRecord.studentId,
+  feeStructureId: formRecord.feeStructureId,
+  amount_paid: formRecord.amount_paid ? Number(formRecord.amount_paid) : 0,
+  balance: formRecord.balance ? Number(formRecord.balance) : 0,
+  isFullyPaid: !!formRecord.fullyPaid,
+}
+
 
   console.log('Submitting form. Payload:', payload)
   console.log('Edit mode:', isEdit.value, 'Editing ID:', editingId.value)
