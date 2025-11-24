@@ -112,7 +112,7 @@
                     {{ formatAmount( row.amount) }}
                   </CTableDataCell>
 
-                  <CTableDataCell class="text-end">{{ formatAmount(row.student_fee_record?.balance }}</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ formatAmount(row.student_fee_record?.balance) }}</CTableDataCell>
 
               
 
