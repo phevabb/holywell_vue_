@@ -517,7 +517,7 @@ const submitForm = async () => {
     await fetchFeeStructures()
 
   } catch (error) {
-    console.error('Submit error:', error)
+
     toast.error('Failed to save fee structure. Please try again.', { position: 'top-right' })
   } finally {
     isSubmitting.value = false
@@ -548,7 +548,7 @@ const confirmDelete = async () => {
 
     
   } catch (error) {
-    console.error('Error deleting Fee Structure:', error.response?.data || error)
+
     toast.error('Failed to delete Fee Structure. Please try again.', { position: 'top-right' })
   } finally {
     isLoading.value = false
@@ -579,7 +579,7 @@ function closeEditModal() {
 async function submitEditForm() {
   if (!editingId.value) return
 
-  console.log('Submitting edit form for ID:', editingId.value, formFee.value)
+
 
   try {
     // Example: send to backend
@@ -592,10 +592,10 @@ async function submitEditForm() {
       toast.success('Fee structure updated successfully!', { position: 'top-right' })
 
 
-    console.log('Successfully updated record')
+  
     showFormModal.value = false
   } catch (error) {
-    console.error('Error updating record:', error)
+
   }
 }
 </script>

@@ -1,6 +1,6 @@
 <script setup>
 const alert = () => {
-  console.log('👋 Well, hi there! Thanks for dismissing me.')
+
 }
 </script>
 

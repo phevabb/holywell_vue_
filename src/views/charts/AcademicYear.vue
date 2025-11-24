@@ -119,7 +119,7 @@ async function fetchYears() {
     const response = await get_academic_years()
     academicYears.value = response.data
   } catch (err) {
-    console.error('Error fetching years', err)
+
     if (err.code === 'ERR_NETWORK') {
       toast.error('Network error. Please check your internet connection.', { position: 'top-right' })
     } else if (err.response) {
@@ -191,7 +191,7 @@ const confirmDelete = async () => {
     academicYears.value = academicYears.value.filter(y => y.id !== yearToDelete.value.id)
     toast.success(`${yearToDelete.value.name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Error deleting year:', error.response?.data || error)
+
     toast.error('Cannot delete this academic year because it is linked to other records.', { position: 'top-right' })
 
   } finally {

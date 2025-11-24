@@ -181,7 +181,7 @@ const confirmDelete = async () => {
     staff.value = staff.value.filter(s => s.id !== staffToDelete.value.id)
     toast.success(`${staffToDelete.value.fullName} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Error deleting staff:', error.response?.data || error)
+
     toast.error('Failed to delete staff. Please try again.', { position: 'top-right' })
   } finally {
     loading.value = false
@@ -262,7 +262,7 @@ const cancelDelete = () => {
 const filteredStaff = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
   if (!term) return staff.value
-  return staff.value.filter(s => s.fullName.toLowerCase().includes(term))
+  return staff.value.filter(s => s.user.full_name.toLowerCase().includes(term))
 })
 
 const allSelected = computed(() => selectedIds.value.length === filteredStaff.value.length && filteredStaff.value.length > 0)
@@ -344,7 +344,7 @@ const submitForm = async () => {
       })
     );
 
-     console.log('Sending cleaned form data to API:', cleanedForm);
+
 
     if (isEdit.value && currentStaff.value) {
       const response = await update_staff(currentStaff.value.id, cleanedForm);
@@ -363,10 +363,9 @@ const submitForm = async () => {
     const response = await create_staff(cleanedForm);
 
     if (response && response.data) {
-      console.log('✅ staff created successfully on the server:', response.data);
+    
 
-      // ✅ Update the table immediately with the new staff record
-      console.log("this is waht came", response)
+
       staff.value.push(response.data);
 
       toast.success('Staff created successfully!', { position: 'top-right' });
@@ -383,8 +382,7 @@ const submitForm = async () => {
     }}
 
   } catch (error) {
-    console.error('❌ Error creating staff:', error.response?.data || error);
-
+  
     const backendMessage =
       error.response?.data?.message ||
       'Failed to create staff. Please check your input and try again.';

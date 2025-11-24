@@ -55,6 +55,7 @@
                 <CTableHeaderCell>Family Fee Record</CTableHeaderCell>
                 <CTableHeaderCell>Date</CTableHeaderCell>
                 <CTableHeaderCell class="text-end">Amount (GHS)</CTableHeaderCell>
+                <CTableHeaderCell class="text-end">NET BALANCE (GHS)</CTableHeaderCell>
                 <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
@@ -70,7 +71,11 @@
                 </CTableDataCell>
                 <CTableDataCell>{{ row.date }}</CTableDataCell>
                 <CTableDataCell class="text-end">{{ formatAmount(row.amount) }}</CTableDataCell>
+                <CTableDataCell class="text-end">{{ formatAmount(row.family_fee_record?.balance) }}</CTableDataCell>
+
                 <CTableDataCell class="text-end">
+
+
                   <CButtonGroup size="sm">
                     <CButton color="secondary" variant="outline" @click="openEditModal(row)">Edit</CButton>
                     <CButton color="danger" variant="outline" @click="openSingleDeleteConfirm(row)">Delete</CButton>
@@ -90,63 +95,58 @@
     </CCol>
   </CRow>
 
-   <!-- Modal -->
-<CModal :visible="showDeleteSingleModal" @close="closeDeleteSingleModal">
-  <CModalHeader>
-    <CModalTitle>Delete Fee Structure</CModalTitle>
-  </CModalHeader>
+  
 
-  <CModalBody>
-    Are you sure you want to delete
-    <strong>
-      {{ deleteTarget?.familyFeeRecord?.family?.name }}
-      -
-      {{ deleteTarget?.familyFeeRecord?.term?.name }}
-      -
-      {{ deleteTarget?.familyFeeRecord?.academicYear?.name }}
-    </strong>
-    payment?
-  </CModalBody>
-
-  <CModalFooter>
-    <CButton color="secondary" variant="outline" @click="closeDeleteSingleModal" :disabled="isDeleting">
-      Cancel
-    </CButton>
-    <CButton color="danger" @click="handleDeletePayment" :disabled="isDeleting">
-      <CSpinner size="sm" v-if="isDeleting" class="me-2" />Delete
-    </CButton>
-  </CModalFooter>
-</CModal>
 
 
   <!-- Modal -->
-  <CModal :visible="showFormModal" @close="closeFormModal">
-    <CModalHeader>
-      <CModalTitle>{{ isEdit ? 'Edit Payment' : 'Add Payment' }}</CModalTitle>
-    </CModalHeader>
-    <CModalBody>
-      <div class="mb-3">
-        <CFormLabel for="familyFeeRecord">Family Fee Record</CFormLabel>
-        <CFormSelect v-model="form.familyFeeRecordId">
-          <option disabled value="" selected>Select Family</option>
-          <option v-for="record in familyFeeRecords" :key="record.id" :value="record.id">
-            {{ record.family.name }} - {{ record.term.name }} - {{ record.academicYear.name }}
-          </option>
-        </CFormSelect>
-      </div>
-      <div class="mb-3">
-        <CFormLabel for="amount">Amount</CFormLabel>
-        <CFormInput v-model="form.amount" type="number" step="0.01" />
-      </div>
-      <div class="mb-3">
-        <CFormLabel for="date">Date</CFormLabel>
-        <CFormInput v-model="form.date" type="date" />
-      </div>
-      <CButton color="primary" @click="submitForm">
-        {{ isEdit ? 'Update' : 'Create' }}
-      </CButton>
-    </CModalBody>
-  </CModal>
+ 
+<CModal :visible="showFormModal" @close="closeFormModal">
+  <CModalHeader>
+    <CModalTitle>{{ isEdit ? 'Edit Payment' : 'Add Payment' }}</CModalTitle>
+  </CModalHeader>
+
+
+  <CModalBody>
+    <!-- Family Fee Record -->
+    <div class="mb-3">
+      <CFormLabel for="familyFeeRecord">Family Fee Record</CFormLabel>
+      <CFormSelect v-model="form.familyFeeRecordId">
+        <option disabled value="" selected>Select Family</option>
+        <option
+          v-for="record in familyFeeRecords"
+          :key="record.id"
+          :value="record.id"
+        >
+          {{ record.family.name }} - {{ record.term.name }} - {{ record.academic_year.name }}
+        </option>
+      </CFormSelect>
+    </div>
+
+    <!-- Amount -->
+    <div class="mb-3">
+      <CFormLabel for="amount">Amount</CFormLabel>
+      <CFormInput v-model="form.amount" type="number" step="0.01" />
+    </div>
+
+    <!-- Date -->
+    <div class="mb-3">
+      <CFormLabel for="date">Date</CFormLabel>
+      <CFormInput v-model="form.date" type="date" />
+    </div>
+
+    <!-- Submit -->
+    <CButton color="primary" @click="submitForm">
+      {{ isEdit ? 'Update' : 'Create' }}
+    </CButton>
+  </CModalBody>
+</CModal>
+
+  
+
+
+
+  
 </template>
 
 <script setup>
@@ -207,7 +207,7 @@ const fetchFamilyFeeRecords = async () => {
 const listPayments = async () => {
   try {
     const res = await get_family_payments()
-    console.log("res of fam print payments", res)
+    
     return res.data || []
   } catch (err) {
     toast.error('Failed to fetch payments.', { position: 'top-right' })
@@ -217,10 +217,25 @@ const listPayments = async () => {
 
 const createPayment = async (data) => {
   try {
-    const res = await create_family_payment(data)
+    const today = new Date().toISOString().split("T")[0]
+
+    // Normalize the date into yyyy-mm-dd
+    const formattedDate = data.date
+      ? data.date.split("T")[0]
+      : today
+
+    const payload = {
+      family_fee_record_id: data.familyFeeRecordId,
+      date: formattedDate,
+      amount: data.amount,
+    }
+
+    const res = await create_family_payment(payload)
     toast.success('Payment added.', { position: 'top-right' })
     return res.data
+
   } catch (err) {
+    
     const backendMsg = err.response?.data?.message?.toLowerCase() || ''
     let msg = 'Failed to add payment.'
 
@@ -232,6 +247,7 @@ const createPayment = async (data) => {
     throw err
   }
 }
+
 
 const updatePayment = async (id, data) => {
   try {
@@ -252,7 +268,7 @@ const updatePayment = async (id, data) => {
 }
 
 const deletePayment = async (id) => {
-  console.log("the id is:", id)
+  
   try {
     await delete_family_payment(id)
     // Remove from local payments array
@@ -341,9 +357,9 @@ const filteredPayments = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
   if (!term) return payments.value
   return payments.value.filter(p => {
-    const family = p.familyFeeRecord?.family?.name?.toLowerCase() || ''
-    const termName = p.familyFeeRecord?.term?.name?.toLowerCase() || ''
-    const ay = p.familyFeeRecord?.academicYear?.name?.toLowerCase() || ''
+    const family = p.family_fee_record?.family?.name?.toLowerCase() || ''
+    const termName = p.family_fee_record?.term?.name?.toLowerCase() || ''
+    const ay = p.family_fee_record?.academic_year?.name?.toLowerCase() || ''
     return family.includes(term) || termName.includes(term) || ay.includes(term)
   })
 })
@@ -374,7 +390,8 @@ const openEditModal = (payment) => {
   form.value = {
     amount: payment.amount,
     date: payment.date,
-    familyFeeRecordId: payment.familyFeeRecord?.id || '',
+    familyFeeRecordId: payment.family_fee_record?.id || '',
+
   }
   showFormModal.value = true
 }

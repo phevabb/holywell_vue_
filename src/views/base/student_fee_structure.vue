@@ -14,10 +14,10 @@
                 v-model="searchField"
                 size="sm"
                 style="min-width: 180px;"
-                aria-label="Choose search field"
+                label="Choose search field"
               >
-                <option value="class">Search by Class</option>
-                <option value="academicYear">Search by Academic Year</option>
+                <option value="grade_class">Search by Class</option>
+                <option value="academic_year">Search by Academic Year</option>
                 <option value="term">Search by Term</option>
               </CFormSelect>
 
@@ -111,7 +111,7 @@
                     No fee structures found
                     <span v-if="searchTerm">
                       for “{{ searchTerm }}” in
-                      {{ searchField === 'academicYear' ? 'Academic Year' : (searchField === 'term' ? 'Term' : 'Class') }}.
+                      {{ searchField === 'academic_year' ? 'Academic Year' : (searchField === 'term' ? 'Term' : 'Class') }}.
                     </span>
                   </CTableDataCell>
                 </CTableRow>
@@ -131,16 +131,16 @@
     </CModalHeader>
     <CModalBody>
       <div class="mb-3">
-        <CFormLabel for="academicYear">Academic Year</CFormLabel>
-        <CFormSelect id="academicYear" v-model="formFee.academicYearId">
+        <CFormLabel for="academic_year">Academic Year</CFormLabel>
+        <CFormSelect id="academic_year" v-model="formFee.academicYearId">
           <option value="" disabled  selected>Select Academic Year</option>
           <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">{{ ay.name }}</option>
         </CFormSelect>
       </div>
 
       <div class="mb-3">
-        <CFormLabel for="gradeClass">Class (Grade)</CFormLabel>
-        <CFormSelect id="gradeClass" v-model="formFee.gradeClassId">
+        <CFormLabel for="grade_class">Class (Grade)</CFormLabel>
+        <CFormSelect id="grade_class" v-model="formFee.gradeClassId">
           <option value="" disabled  selected >Select Class</option>
           <option v-for="gc in gradeClasses" :key="gc.id" :value="gc.id">{{ gc.name }}</option>
         </CFormSelect>
@@ -181,7 +181,7 @@
     <CModalHeader><CModalTitle>Delete Fee Structure</CModalTitle></CModalHeader>
     <CModalBody>
       Are you sure you want to delete
-      <strong>{{ deleteTarget?.gradeClass?.name }} / {{ deleteTarget?.term?.name }} / {{ deleteTarget?.academicYear?.name }}</strong>?
+      <strong>{{ deleteTarget?.grade_class?.name }} / {{ deleteTarget?.term?.name }} / {{ deleteTarget?.academic_year?.name }}</strong>?
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" variant="outline" @click="closeDeleteSingleModal" :disabled="isDeleting">Cancel</CButton>
@@ -244,23 +244,23 @@ const feeStructureApi = {
   async listFeeStructures() {
     // Assuming you have an API for fetching all fee structures
     const res = await get_fee_structures()
-    console.log("this is the structdata:", res)
+ 
     return res?.data || []
   },
 
   async createFeeStructure(payload) {
+
     const res = await create_fee_structure(payload)
     return res?.data
   },
 
   async updateFeeStructure(id, payload) {
 
-    console.log("updating fee structure", id, payload)
     const res = await update_fee_structure(id, payload)
-    console.log("updated fee structure... yeah the out come is ress 1", res)
-    console.log("updated fee structure... yeah the out come is ress 2", res.data.data)
+
+   
     
-    return res?.data.data
+    return res?.data
     
     
   },
@@ -284,7 +284,7 @@ const gradeClasses = ref([])
 const terms = ref([])
 
 /* NEW: search field */
-const searchField = ref('class') // 'class' | 'academicYear' | 'term'
+const searchField = ref('grade_class') // 'class' | 'academicYear' | 'term'
 const searchTerm = ref('')
 
 const selectedIds = ref([])
@@ -309,7 +309,7 @@ const showDeleteBulkModal = ref(false)
 /* ---------- Computed ---------- */
 const searchPlaceholder = computed(() => {
   switch (searchField.value) {
-    case 'academicYear': return 'Search academic year...'
+    case 'academic_year': return 'Search academic year...'
     case 'term': return 'Search term...'
     default: return 'Search class...'
   }
@@ -320,14 +320,14 @@ const filteredFeeStructures = computed(() => {
   if (!q) return feeStructures.value
 
   return feeStructures.value.filter((row) => {
-    if (searchField.value === 'academicYear') {
-      return String(row?.academicYear?.name || '').toLowerCase().includes(q)
+    if (searchField.value === 'academic_year') {
+      return String(row?.academic_year?.name || '').toLowerCase().includes(q)
     }
     if (searchField.value === 'term') {
       return String(row?.term?.name || '').toLowerCase().includes(q)
     }
     // default: class
-    return String(row?.gradeClass?.name || '').toLowerCase().includes(q)
+    return String(row?.grade_class?.name || '').toLowerCase().includes(q)
   })
 })
 
@@ -413,8 +413,8 @@ function openAddModal() {
 function openEditModal(row) {
   isEdit.value = true
   editingId.value = row.id
-  formFee.academicYearId = row.academicYear?.id ?? ''
-  formFee.gradeClassId = row.gradeClass?.id ?? ''
+  formFee.academicYearId = row.academic_year?.id ?? ''
+  formFee.gradeClassId = row.grade_class?.id ?? ''
   formFee.termId = row.term?.id ?? ''
   formFee.amount = row.amount ?? ''
   formValidationMessage.value = ''
@@ -450,9 +450,9 @@ function submitForm() {
   if (!validateForm()) return
   isSubmitting.value = true
   const payload = {
-    academicYearId: formFee.academicYearId,
-    gradeClassId: formFee.gradeClassId,
-    termId: formFee.termId,
+    academic_year_id: formFee.academicYearId,
+    grade_class_id: formFee.gradeClassId,
+    term_id: formFee.termId,
     amount: formFee.amount,
   }
 
@@ -470,11 +470,10 @@ function submitForm() {
       .catch((err) => (formValidationMessage.value = err?.message || 'Failed to update fee structure.'))
       .finally(done)
   } else {
-    feeStructureApi
-      .createFeeStructure(payload)
+    feeStructureApi.createFeeStructure(payload)
       .then((created) => {
-        console.log("created fee structure", created)
-        feeStructures.value = [...feeStructures.value, created.data]
+
+        feeStructures.value = [...feeStructures.value, created]
 
         
         showFormModal.value = false
@@ -506,7 +505,7 @@ async function confirmDeleteSingle() {
       position: 'top-right',
     })
   } catch (error) {
-    console.error('Delete failed:', error)
+  
 
     // Extract associated record name if backend provides it
     const associatedRecordName =

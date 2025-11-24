@@ -323,9 +323,11 @@ const ffrApi = (() => {
     // CREATE
     async createRecord(payload) {
       try {
+      
         const res = await create_family_fee_rec(payload)
         return clone(res.data)
       } catch (err) {
+
         const msg = err.response?.data?.message || 'Failed to create record.'
         toast.error(msg, { position: 'top-right' })
         throw err
@@ -543,10 +545,10 @@ async function loadRecords() {
     try {
       const rows = await ffrApi.listRecords()
       records.value = rows
-      console.log('Loaded print records:', rows) // PRINT HERE
+
     } catch (err) {
       errorMessage.value = err?.message || 'Failed to load family fee records.'
-      console.error('Error loading records:', err)
+ 
     }
   } finally {
     isLoading.value = false
@@ -606,11 +608,11 @@ function submitForm() {
   isSubmitting.value = true
 
   const payload = {
-    familyId: form.familyId,
-    termId: form.termId,
-    academicYearId: form.academicYearId,
-    amountToPay: form.amountToPay,
-    amountPaid: form.amountPaid,
+    family_id: form.familyId,
+    term_id: form.termId,
+    academic_year_id: form.academicYearId,
+    amount_to_pay: form.amountToPay
+
   }
 
   const done = () => (isSubmitting.value = false)

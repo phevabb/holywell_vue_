@@ -279,16 +279,14 @@ async function fetchUsers() {
   try {
     const response = await st();
 
-    console.log('API response:', response);
 
-    console.log('Fetched users:', response.data);
 
     students.value = response.data;
     
     
     
   }  catch (err) {
-    console.error('Error fetching users:', err);
+
 
     if (err.code === 'ERR_NETWORK') {
       toast.error('Network error. Please check your internet connection.', { position: 'top-right' });
@@ -348,7 +346,7 @@ const form = ref({
 
 const filteredStudents = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
-  return term ? students.value.filter(s => s.full_name.toLowerCase().includes(term)) : students.value
+  return term ? students.value.filter(s => s.user.full_name.toLowerCase().includes(term)) : students.value
 })
 
 const openAddModal = () => {
@@ -374,7 +372,7 @@ const submitForm = async () => {
   loading.value = true;
 
   try {
-    console.log('Submitting form...');
+
 
     // ✅ Apply defaults BEFORE validation
     form.value.gender = form.value.gender || 'MALE';
@@ -408,13 +406,13 @@ const submitForm = async () => {
       })
     );
 
-    console.log('Sending cleaned form data to API:', cleanedForm);
+    
 
 
       if (isEdit.value && currentStudent.value) {
       // ✅ Update existing student
       const response = await update_student(currentStudent.value.id, cleanedForm);
-      console.log('Student updated:', response.data);
+
 
       // Update table immediately
       const index = students.value.findIndex(s => s.id === currentStudent.value.id);
@@ -429,11 +427,13 @@ const submitForm = async () => {
     // ✅ Call API and wait for response
     const response = await create_student(cleanedForm);
 
+  
+
     if (response && response.data) {
-      console.log('✅ Student created successfully on the server:', response.data);
+    
 
       // ✅ Update the table immediately with the new student record
-      console.log("this is waht came", response)
+  
       students.value.push(response.data);
 
       toast.success('Student created successfully!', { position: 'top-right' });
@@ -450,7 +450,7 @@ const submitForm = async () => {
     }}
 
   } catch (error) {
-    console.error('❌ Error creating student:', error.response?.data || error);
+
 
     const backendMessage =
       error.response?.data?.message ||
@@ -478,7 +478,7 @@ const confirmDelete = async () => {
     students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
     toast.success(`${studentToDelete.value.full_name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Error deleting student:', error.response?.data || error)
+
     toast.error('Failed to delete student. Please try again.', { position: 'top-right' })
   } finally {
     loading.value = false

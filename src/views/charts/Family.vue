@@ -156,9 +156,9 @@
         <option
           v-for="st in filteredStudentOptions"
           :key="st.id"
-          :value="String(st.id)"
+          :value="String(st.user.id)"
         >
-          {{ st.fullName }}
+          {{ st.user.full_name }}
         </option>
       </CFormSelect>
 
@@ -208,7 +208,7 @@
               :key="st.id"
               :value="String(st.id)"
             >
-              {{ st.fullName }}
+              {{ st.user.full_name }}
             </option>
           </CFormSelect>
         </CCol>
@@ -286,7 +286,7 @@ const familyApi = (() => {
         const response = await get_families()
         return clone(response.data || [])
       } catch (error) {
-        console.error('Error fetching families:', error)
+s
         throw error
       }
     },
@@ -296,17 +296,19 @@ const familyApi = (() => {
         const response = await st()
         return clone(response.data || [])
       } catch (error) {
-        console.error('Error fetching students:', error)
+
         throw error
       }
     },
 
     async createFamily(payload /* { name, memberIds } */) {
       try {
+
         const response = await create_family(payload)
+
         return clone(response.data || response)
       } catch (error) {
-        console.error('Error creating family:', error)
+ 
         throw error
       }
     },
@@ -316,7 +318,7 @@ const familyApi = (() => {
         const response = await update_family(id, payload)
         return clone(response.data || response)
       } catch (error) {
-        console.error('Error updating family:', error)
+   
         throw error
       }
     },
@@ -327,7 +329,7 @@ const familyApi = (() => {
         const response = await update_family(id, payload)
         return clone(response.data || response)
       } catch (error) {
-        console.error('Error updating family members:', error)
+
         throw error
       }
     },
@@ -338,7 +340,7 @@ const familyApi = (() => {
         toast.success('Family deleted successfully.')
         return { success: true, ...(response.data || {}) }
       } catch (error) {
-        console.error('Error deleting family:', error)
+   
         throw error
       }
     },
@@ -352,7 +354,7 @@ const familyApi = (() => {
 
         return { success: failCount === 0, deleted: successCount, failed: failCount }
       } catch (error) {
-        console.error('Error deleting multiple families:', error)
+     
         throw error
       }
     },
@@ -430,7 +432,7 @@ const someSelected = computed(() =>
 const filteredStudentOptions = computed(() => {
   const q = memberSearch.value.trim().toLowerCase()
   if (!q) return students.value
-  return students.value.filter(s => String(s.fullName || '').toLowerCase().includes(q))
+  return students.value.filter(s => String(s.user.full_name || '').toLowerCase().includes(q))
 })
 
 /* ---------- Helpers ---------- */
@@ -479,7 +481,7 @@ async function loadFamilies() {
   try {
     try {
       const rows = await familyApi.listFamilies()
-      console.log("families print", rows)
+    
       return (families.value = rows)
     } catch (err) {
       return (errorMessage.value = err?.message || 'Failed to load families.')
@@ -490,6 +492,7 @@ async function loadFamilies() {
 }
 async function loadStudents() {
   const rows = await familyApi.listStudents()
+  
   return (students.value = rows)
 }
 
@@ -560,7 +563,7 @@ function submitForm() {
 
   const payload = {
     name: formFamily.name,
-    memberIds: memberIdsNumeric,
+    member_ids: memberIdsNumeric,
   }
 
   const done = () => (isSubmitting.value = false)
@@ -621,11 +624,11 @@ async function confirmDeleteSingle() {
   const familyId = deleteTarget.value.id
   const familyName = deleteTarget.value.name
 
-  console.log("Deleting family ID:", familyId)
+  
 
   try {
     const response = await delete_family(familyId)
-    console.log("Delete response:", response)
+
 
     // Remove from local list
     families.value = families.value.filter(f => f.id !== familyId)
@@ -633,7 +636,7 @@ async function confirmDeleteSingle() {
 
     toast.success(`Family "${familyName}" deleted successfully.`, { position: 'top-right' })
   } catch (err) {
-    console.error('Error deleting family:', err)
+
 
     let message = `Failed to delete "${familyName}". Connected to another record`
     

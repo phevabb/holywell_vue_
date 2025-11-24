@@ -16,9 +16,9 @@
                 aria-label="Choose search field"
               >
                 <option value="student">Search by Student</option>
-                <option value="class">Search by Class</option>
+                <option value="grade_class">Search by Class</option>
                 <option value="term">Search by Term</option>
-                <option value="academicYear">Search by Academic Year</option>
+                <option value="academic_year">Search by Academic Year</option>
               </CFormSelect>
 
               <!-- Search input -->
@@ -85,6 +85,8 @@
                   <CTableHeaderCell scope="col">Academic Year</CTableHeaderCell>
                   <CTableHeaderCell scope="col">Date</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-end">Amount (GHS)</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-end">NET BALANCE (GHS)</CTableHeaderCell>
+
                   <CTableHeaderCell scope="col" class="text-end" style="width: 160px;">Actions</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
@@ -101,9 +103,18 @@
                   <CTableDataCell>{{ row.student_fee_record?.fee_structure?.term?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.student_fee_record?.fee_structure?.academic_year?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.date }}</CTableDataCell>
+                  
+              
+               
+               
+
                   <CTableDataCell class="text-end">
-                    {{ formatAmount(row.amount) }}
+                    {{ formatAmount( row.amount) }}
                   </CTableDataCell>
+
+                  <CTableDataCell class="text-end">{{ formatAmount(row.student_fee_record?.balance }}</CTableDataCell>
+
+              
 
                   <CTableDataCell class="text-end">
                     <CButtonGroup size="sm">
@@ -122,9 +133,9 @@
                     <span v-if="searchTerm">
                       for “{{ searchTerm }}” in
                       {{
-                        searchField === 'academicYear'
+                        searchField === 'academic_year'
                           ? 'Academic Year'
-                          : (searchField === 'term' ? 'Term' : (searchField === 'class' ? 'Class' : 'Student'))
+                          : (searchField === 'term' ? 'Term' : (searchField === 'grade_class' ? 'Class' : 'Student'))
                       }}.
                     </span>
                   </CTableDataCell>
@@ -167,10 +178,10 @@
           :key="s.id"
           @click="selectRecord(s)"
         >
-          {{ s.student.fullName }} /
-          {{ s.feeStructure.gradeClass.name }} /
-          {{ s.feeStructure.term.name }} /
-          {{ s.feeStructure.academicYear.name }}
+          {{ s.student.user.full_name }} /
+          {{ s.fee_structure?.grade_class.name }} /
+          {{ s.fee_structure?.term.name }} /
+          {{ s.fee_structure?.academic_year.name }}
         </button>
       </div>
     </div>
@@ -216,7 +227,7 @@
       Are you sure you want to delete the payment of
       <strong>GHS {{ formatAmount(deleteTarget?.amount) }}</strong>
       for
-      <strong>{{ deleteTarget?.studentFeeRecord?.student?.fullName }}</strong>
+      <strong>{{ deleteTarget?.studentFeeRecord?.student?.full_name }}</strong>
       on {{ deleteTarget?.date }}?
     </CModalBody>
     <CModalFooter>
@@ -263,7 +274,7 @@ const filteredStudentFeeRecords = ref([])
 
 function selectRecord(record){
   formPayment.studentFeeRecordId = record.id
-  recordSearch.value = `${record.student.fullName} / ${record.feeStructure.gradeClass.name} / ${record.feeStructure.term.name} / ${record.feeStructure.academicYear.name}`
+  recordSearch.value = `${record.student.user.full_name} / ${record.fee_structure.grade_class.name} / ${record.fee_structure.term.name} / ${record.fee_structure.academic_year.name}`
   filteredStudentFeeRecords.value = []
 } 
 
@@ -281,23 +292,25 @@ const paymentApi = (() => {
     async listPayments() {
       try {
         const response = await get_payments()
-        console.log("ress of paymnest", response.data)
+   
         // Expecting backend to return: [{ id, studentFeeRecord, date, amount }, ...]
         return response.data || []
       } catch (error) {
-        console.error('Error fetching payments:', error)
+
         throw error
       }
     },
 
     async listStudentFeeRecords() {
       
+
+      
       try {
         const response = await get_student_fee_record() 
-        console.log("fee recs:.......", response.data);
-        return response.data?.map(p => p.studentFeeRecord) || []
+
+        return response.data || []
       } catch (error) {
-        console.error('Error fetching student fee records:', error)
+
         throw error
       }
     },
@@ -305,12 +318,14 @@ const paymentApi = (() => {
     async createPayment(payload) {
       try {
         // payload: { studentFeeRecordId, date?, amount }
+   
         const response = await create_payment(payload)
 
-        return response.data.all || response
+
+        return response.data || response
 
       } catch (error) {
-        console.error('Error creating payment:', error)
+
         throw error
       }
     },
@@ -323,7 +338,7 @@ const paymentApi = (() => {
         toast.success('Payment deleted successfully.')
         return response.data || response
       } catch (error) {
-        console.error('Error deleting payment:', error)
+      
         throw error
       }
     },
@@ -333,7 +348,7 @@ const paymentApi = (() => {
         const results = await Promise.all(ids.map(id => delete_payment(id)))
         return { success: true, deleted: results.length }
       } catch (error) {
-        console.error('Error deleting multiple payments:', error)
+       
         throw error
       }
     },
@@ -341,22 +356,26 @@ const paymentApi = (() => {
 })()
 
 
-function filterRecords(){
-  const query = recordSearch.value.toLowerCase()
+function filterRecords() {
+  const query = recordSearch.value.toLowerCase();
+
+
   filteredStudentFeeRecords.value = studentFeeRecords.value.filter(record => {
-    const studentName = record.student?.fullName?.toLowerCase() || ''
-    const className = record.feeStructure?.gradeClass?.name?.toLowerCase() || ''
-    const termName = record.feeStructure?.term?.name?.toLowerCase() || ''
-    const academicYearName = record.feeStructure?.academicYear?.name?.toLowerCase() || ''   
+    const studentName = record.student?.user.full_name?.toLowerCase() || '';
+    const className = record.fee_structure?.grade_class?.name?.toLowerCase() || '';
+    const termName = record.fee_structure?.term?.name?.toLowerCase() || '';
+    const academicYearName = record.fee_structure?.academic_year?.name?.toLowerCase() || '';
+
     return (
       studentName.includes(query) ||
       className.includes(query) ||
       termName.includes(query) ||
       academicYearName.includes(query)
-    )
-  })  
+    );
+  });
 
 }
+
 
 
 /* ---------- State ---------- */
@@ -395,9 +414,9 @@ const showDeleteBulkModal = ref(false)
 /* ---------- Computed ---------- */
 const searchPlaceholder = computed(() => {
   switch (searchField.value) {
-    case 'academicYear': return 'Search academic year...'
+    case 'academic_year': return 'Search academic year...'
     case 'term': return 'Search term...'
-    case 'class': return 'Search class...'
+    case 'grade_class': return 'Search class...'
     default: return 'Search student...'
   }
 })
@@ -407,17 +426,21 @@ const filteredPayments = computed(() => {
   if (!q) return payments.value
 
   return payments.value.filter((row) => {
-    const fs = row?.studentFeeRecord?.feeStructure
-    const student = row?.studentFeeRecord?.student
+   
+
+    const fs = row?.student_fee_record?.fee_structure
+    
+
+    const student = row?.student_fee_record?.student.user
     switch (searchField.value) {
-      case 'academicYear':
-        return String(fs?.academicYear?.name || '').toLowerCase().includes(q)
+      case 'academic_year':
+        return String(fs?.academic_year?.name || '').toLowerCase().includes(q)
       case 'term':
         return String(fs?.term?.name || '').toLowerCase().includes(q)
-      case 'class':
-        return String(fs?.gradeClass?.name || '').toLowerCase().includes(q)
+      case 'grade_class':
+        return String(fs?.grade_class?.name || '').toLowerCase().includes(q)
       default: // student
-        return String(student?.fullName || '').toLowerCase().includes(q)
+        return String(student?.full_name || '').toLowerCase().includes(q)
     }
   })
 })
@@ -472,6 +495,7 @@ function toggleSelectAll() {
 /* ---------- Loaders ---------- */
 async function loadStudentFeeRecords() {
   const x = await paymentApi.listStudentFeeRecords()
+
   return (studentFeeRecords.value = x)
 }
 async function loadPayments() {
@@ -479,8 +503,8 @@ async function loadPayments() {
   errorMessage.value = ''
   try {
     try {
-      const rows = await paymentApi
-        .listPayments()
+      const rows = await paymentApi.listPayments()
+
       return (payments.value = rows)
     } catch (err) {
       return (errorMessage.value = err?.message || 'Failed to load payments.')
@@ -515,7 +539,7 @@ function closeFormModal() {
 /* ---------- Delete modals ---------- */
 function openSingleDeleteConfirm(row) {
   deleteTarget.value = row
-  console.log("item to delete....:", row)
+ 
 
   showDeleteSingleModal.value = true
 }
@@ -539,11 +563,16 @@ function submitForm() {
   if (!validateForm()) return
   isSubmitting.value = true
 
-  const payload = {
-    studentFeeRecordId: formPayment.studentFeeRecordId,
-    date: formPayment.date || undefined, // backend @PrePersist will set today if null
-    amount: formPayment.amount,
-  }
+  const today = new Date().toISOString().split("T")[0];
+
+const payload = {
+  student_fee_record_id: formPayment.studentFeeRecordId,
+  date: formPayment.date 
+    ? formPayment.date.split("T")[0] 
+    : today,       // use today's date if undefined
+  amount: formPayment.amount,
+};
+
 
   const done = () => (isSubmitting.value = false)
 
@@ -622,6 +651,7 @@ onMounted(async () => {
   try {
     isLoading.value = true
     const a = await get_student_fee_record()
+
     
 
     studentFeeRecords.value = a.data

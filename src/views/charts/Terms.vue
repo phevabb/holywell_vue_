@@ -236,7 +236,7 @@ const submitForm = async () => {
 }
 
       const t = await update_term(currentTerm.value.id, payload)
-      console.log("ttttttt", t)
+
 
       toast.success('Term updated successfully')
     } else {
@@ -247,7 +247,7 @@ const submitForm = async () => {
     await fetchTerms()
     closeFormModal()
   } catch (err) {
-    console.error('Error saving term:', err.response?.data || err)
+
     toast.error(err.response?.data?.message || 'Failed to save term.', { position: 'top-right' })
   } finally {
     loading.value = false
@@ -269,7 +269,7 @@ const confirmDelete = async () => {
     terms.value = terms.value.filter(t => t.id !== termToDelete.value.id)
     toast.success(`${termToDelete.value.name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Error deleting term:', error.response?.data || error)
+
    toast.error('Cannot delete this term because it is linked to other records.', { position: 'top-right' })
 
   } finally {

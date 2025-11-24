@@ -144,7 +144,7 @@ async function fetchClasses() {
 
     gradeClasses.value = response.data;
   } catch (err) {
-    console.error('Error fetching users:', err);
+
 
     if (err.code === 'ERR_NETWORK') {
       toast.error('Network error. Please check your internet connection.', { position: 'top-right' });
@@ -254,13 +254,13 @@ const submitForm = async () => {
 
 
 
-    console.log('Submitting cleaned form:', cleanedForm2);
+
 
     let response;
     if (isEdit.value && currentClass.value) {
       // Update class
       response = await update_class(currentClass.value.id, cleanedForm2);
-      console.log('Update responsewwwwwwwwwwwwwww:', response.data);
+
       const index = gradeClasses.value.findIndex(c => c.id === currentClass.value.id);
       if (index !== -1) {
   const updatedClass = response.data;
@@ -284,7 +284,7 @@ const submitForm = async () => {
     closeFormModal();
 
   } catch (err) {
-    console.error('Error submitting form:', err);
+
     const backendMessage = err.response?.data?.message || 'Failed to submit form.';
     toast.error(backendMessage, { position: 'top-right' });
   } finally {
@@ -306,7 +306,7 @@ const confirmDelete = async () => {
     gradeClasses.value = gradeClasses.value.filter(s => s.id !== classToDelete.value.id)
     toast.success(`${classToDelete.value.name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Error deleting class:', error.response?.data || error)
+
     toast.error('Failed to delete class. Please try again.', { position: 'top-right' })
   } finally {
     loading.value = false
