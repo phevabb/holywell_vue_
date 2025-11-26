@@ -1,9 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://kogschoolmanagementsystem-phevabb2997-w0rp7kqd.leapcell.dev/api/',
+  /*baseURL: 'https://kogschoolmanagementsystem-phevabb2997-w0rp7kqd.leapcell.dev/api/',*/
 
-  /*baseURL: 'http://127.0.0.1:8000/api/', */
+ 
+  baseURL: ' https://phevab1.pythonanywhere.com/api',
+
+  /* baseURL: 'http://127.0.0.1:8000/api/', */
 });
 
 export const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -47,50 +50,29 @@ export const get_family_payments = () => api.get("family-fees/family-payments");
 export const create_family_payment = (payload) => api.post("family-fees/family-payments/", payload);
 export const delete_family_payment = (id) => api.delete(`family-fees/family-payments/${id}/`);
 
-
-
-
-
-
 // Classes APIs
-
-// export const get_classes = () => api.get("classes");
-export const get_classes = () => api.get("student/classes"); ////
-
-export const create_class = (payload) => api.post("classes", payload);
-export const update_class = (id, payload) => api.put(`classes/${id}`, payload); 
-export const delete_class = (id) => api.delete(`classes/${id}`);  
+export const get_classes = () => api.get("student/classes"); 
+export const create_class = (payload) => api.post("student/classes/", payload);
+export const update_class = (id, payload) => api.put(`student/classes/${id}/`, payload); 
+export const delete_class = (id) => api.delete(`student/classes/${id}/`);  
 
 // staff APIs
-
-// export const get_staff = () => api.get("staff");
 export const get_staff = () => api.get("staff/staff-profiles");
-
-
-export const create_staff = (payload) => api.post("staff", payload);  
-export const update_staff = (id, payload) => api.put(`staff/${id}`, payload);
-export const delete_staff = (id) => api.delete(`staff/${id}`);
+export const create_staff = (payload) => api.post("staff/staff-profiles/", payload);  
+export const update_staff = (id, payload) => api.put(`staff/staff-profiles/${id}/`, payload);
+export const delete_staff = (id) => api.delete(`staff/staff-profiles/${id}/`);
 
 // academic year APIs
-
-// export const get_academic_years = () => api.get("academic-year");
 export const get_academic_years = () => api.get("student/academic-years");
-
-
-
-export const create_academic_year = (payload) => api.post("academic-year", payload);
-export const update_academic_year = (id, payload) => api.put(`academic-year/${id}`, payload);
-export const delete_academic_year = (id) => api.delete(`academic-year/${id}`);
+export const create_academic_year = (payload) => api.post("student/academic-years/", payload);
+export const update_academic_year = (id, payload) => api.put(`student/academic-years/${id}/`, payload);
+export const delete_academic_year = (id) => api.delete(`student/academic-years/${id}/`);
 
 // term APIs
-
-// export const get_terms = () => api.get("term"); 
 export const get_terms = () => api.get("student/terms"); 
-
-
-export const create_term = (payload) => api.post("term", payload);
-export const update_term = (id, payload) => api.put(`term/${id}`, payload);
-export const delete_term = (id) => api.delete(`term/${id}`);  
+export const create_term = (payload) => api.post("student/terms/", payload);
+export const update_term = (id, payload) => api.put(`student/terms/${id}/`, payload);
+export const delete_term = (id) => api.delete(`student/terms/${id}/`);  
 
 
 

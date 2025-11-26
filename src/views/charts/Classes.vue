@@ -27,7 +27,7 @@
       <CTableRow>
         <CTableHeaderCell>#</CTableHeaderCell>
         <CTableHeaderCell>Class Name</CTableHeaderCell>
-        <CTableHeaderCell>Staff</CTableHeaderCell>
+         <CTableHeaderCell>Staff</CTableHeaderCell>
         <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
@@ -51,7 +51,7 @@
       <CTableRow v-else v-for="(cls, idx) in filteredClasses" :key="cls.id">
         <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
         <CTableDataCell>{{ cls.name }}</CTableDataCell>
-        <CTableDataCell>{{ cls.staff.user?.full_name || '—' }}</CTableDataCell>
+       <CTableDataCell>{{ cls.staff.user?.full_name || '—' }}</CTableDataCell>
         <CTableDataCell class="text-end">
           <CButtonGroup size="sm">
             <CButton color="secondary" variant="outline" @click="openEditModal(cls)">Edit</CButton>
@@ -97,7 +97,7 @@
   <CFormSelect v-model="form.staff">
     <option value="">No Staff Assigned</option>
     <option v-for="staff in staff" :key="staff.id" :value="staff.id">
-      {{ staff.fullName }}
+      {{ staff.full_name }}
     </option>
   </CFormSelect>
 
@@ -138,9 +138,12 @@ async function fetchClasses() {
   loading.value = true;
   try {
     const response = await get_classes();
+
     const response_for_staff = await get_staff();
 
-    staff.value =response_for_staff.data;
+
+    staff.value = response_for_staff.data.map(item => item.user);
+
 
     gradeClasses.value = response.data;
   } catch (err) {
