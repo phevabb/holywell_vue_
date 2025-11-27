@@ -4,7 +4,7 @@ const api = axios.create({
   /*baseURL: 'https://kogschoolmanagementsystem-phevabb2997-w0rp7kqd.leapcell.dev/api/',*/
 
  
-  baseURL: ' https://phevab1.pythonanywhere.com/api',
+  baseURL: ' https://feessystem-aidooemmanuelkwame1416-zluuv6f0.leapcell.dev/api',
 
   /* baseURL: 'http://127.0.0.1:8000/api/', */
 });
