@@ -71,7 +71,7 @@
   <CTableRow v-else v-for="(student, idx) in filteredStudents" :key="student.id">
     <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
     <CTableDataCell>{{ student.user.full_name }}</CTableDataCell>
-    <CTableDataCell>{{ student.currentClass }}</CTableDataCell>
+    <CTableDataCell>{{ student.current_class }}</CTableDataCell>
     <CTableDataCell>{{ student.contact_of_father }}</CTableDataCell>
     <CTableDataCell>{{ student.contact_of_mother }}</CTableDataCell>
     <CTableDataCell>{{ student.allergic_foods ? student.allergic_foods : '—' }}</CTableDataCell>
@@ -126,22 +126,26 @@
       <CTabs variant="pills" class="mb-3" :activeItemKey="0">
         <CTab title="Personal Info" active itemKey="personal-info">
           <div class="row g-3">
+
             <div class="col-md-6">
               <CFormLabel>Full Name</CFormLabel>
               <CFormInput v-model="form.full_name" />
             </div>
+
             <div class="col-md-3">
               <CFormLabel>Gender</CFormLabel>
                 <CFormSelect v-model="form.gender">
                 <option disabled value="">Choose Gender</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
                 </CFormSelect>
             </div>
+
             <div class="col-md-3">
               <CFormLabel>Date of Birth</CFormLabel>
               <CFormInput type="date" v-model="form.date_of_birth" />
             </div>
+
             <div class="col-md-6">
               <CFormLabel>Nationality</CFormLabel>
               <CFormInput v-model="form.nationality" />
@@ -150,7 +154,7 @@
             <div class="col-md-6">  
             <CFormLabel>Current Class</CFormLabel>
                     
-            <CFormSelect v-model="form.currentClass">
+            <CFormSelect v-model="form.current_class">
               <option v-for="cls in classOptions" :key="cls.value" :value="cls.value">
                 {{ cls.label }}
               </option>
@@ -167,12 +171,12 @@
               <CFormCheck v-model="form.immunized" label="Immunized" />
               <CFormCheck v-model="form.allergies" label="Has Allergies" />
               <CFormLabel>Allergic Foods</CFormLabel>
-              <CFormInput v-model="form.allergicFoods" />
+              <CFormInput v-model="form.allergic_foods" />
             </div>
             <div class="col-md-6">
               <CFormCheck v-model="form.hasPeculiarHealthIssues" label="Has Health Issues" />
               <CFormLabel>Health Issues</CFormLabel>
-              <CFormTextarea v-model="form.healthIssues" rows="3" />
+              <CFormTextarea v-model="form.health_issues" rows="3" />
             </div>
           </div>
         </CTab>
@@ -187,7 +191,7 @@
               <CFormLabel>Contact of Father</CFormLabel>
               <CFormInput v-model="form.contact_of_father" />
               <CFormLabel>Nationality of Father</CFormLabel>
-              <CFormInput v-model="form.nationalityOfFather" />
+              <CFormInput v-model="form.nationality_of_father" />
             </div>
             <div class="col-md-6">
               <CFormLabel>Name of Mother</CFormLabel>
@@ -197,7 +201,7 @@
               <CFormLabel>Contact of Mother</CFormLabel>
               <CFormInput v-model="form.contact_of_mother" />
               <CFormLabel>Nationality of Mother</CFormLabel>
-              <CFormInput v-model="form.nationalityOfMother" />
+              <CFormInput v-model="form.nationality_of_mother" />
             </div>
           </div>
         </CTab>
@@ -281,6 +285,7 @@ async function fetchUsers() {
 
 
 
+
     students.value = response.data;
     
     
@@ -311,20 +316,20 @@ onMounted(() => {
 
 
 const classOptions = [
-  { label: 'Creche', value: 'CRECHE' },
-  { label: 'Nursery 1', value: 'NURSERY_1' },
-  { label: 'Nursery 2', value: 'NURSERY_2' },
-  { label: 'KG 1', value: 'KG_1' },
-  { label: 'KG 2', value: 'KG_2' },
-  { label: 'Class 1', value: 'CLASS_1' },
-  { label: 'Class 2', value: 'CLASS_2' },
-  { label: 'Class 3', value: 'CLASS_3' },
-  { label: 'Class 4', value: 'CLASS_4' },
-  { label: 'Class 5', value: 'CLASS_5' },
-  { label: 'Class 6', value: 'CLASS_6' },
-  { label: 'JHS 1', value: 'JHS_1' },
-  { label: 'JHS 2', value: 'JHS_2' },
-  { label: 'JHS 3', value: 'JHS_3' },
+  { label: 'Creche', value: 1 },
+  { label: 'Nursery 1', value: 2 },
+  { label: 'Nursery 2', value: 3 },
+  { label: 'KG 1', value: 4 },
+  { label: 'KG 2', value: 5 },
+  { label: 'Class 1', value: 6 },
+  { label: 'Class 2', value: 7 },
+  { label: 'Class 3', value: 8 },
+  { label: 'Class 4', value: 9 },
+  { label: 'Class 5', value: 10 },
+  { label: 'Class 6', value: 11 },
+  { label: 'JHS 1', value: 12 },
+  { label: 'JHS 2', value: 13 },
+  { label: 'JHS 3', value: 14 },
 ]
 
 
@@ -333,14 +338,47 @@ const showFormModal = ref(false)
 const isEdit = ref(false)
 const currentStudent = ref(null)
 
+
+
+
 const form = ref({
-  full_name: '', gender: '', nationality: '', date_of_birth: '', currentClass: '', familyId: '',
-  immunized: false, allergies: false, allergicFoods: '', hasPeculiarHealthIssues: false, healthIssues: '',
-  name_of_father: '', occupation_of_father: '', contact_of_father: '', nationalityOfFather: '',
-  name_of_mother: '', occupation_of_mother: '', contact_of_mother: '', nationalityOfMother: '',
-  lastSchoolAttended: '', classSeekingAdmissionTo: '', houseNumber: '', otherRelatedInfo: '',
-  active: true, staff: false, role: 'STUDENT'
-})
+  // nested user object used throughout the modal
+  
+    full_name: '',
+    gender: '',            // 'male' | 'female'
+    nationality: '',
+    date_of_birth: '',     // 'YYYY-MM-DD' string for <input type="date"> 
+
+  // class selections (strings to satisfy CFormSelect)
+  current_class: '',            // e.g., 'jhs 1'
+  classSeekingAdmissionTo: '', // e.g., 'jhs 1'
+
+  // other top-level fields
+  familyId: '',
+  immunized: false,
+  allergies: false,
+  allergic_foods: '',
+  hasPeculiarHealthIssues: false,
+  health_issues: '',
+  name_of_father: '',
+  occupation_of_father: '',
+  contact_of_father: '',
+  nationality_of_father: '',
+  name_of_mother: '',
+  occupation_of_mother: '',
+  contact_of_mother: '',
+  nationality_of_mother: '',
+  lastSchoolAttended: '',
+  houseNumber: '',
+  otherRelatedInfo: '',
+  active: true,
+
+  // this looks like a boolean UI flag in your code; rename to avoid confusion with backend staff ID
+  staff: false,
+
+  role: 'STUDENT',
+});
+
 
 /*all refs above*/
 
@@ -352,21 +390,154 @@ const filteredStudents = computed(() => {
 const openAddModal = () => {
   isEdit.value = false
   currentStudent.value = null
-  form.value = { ...form.value, full_name: '', gender: '', nationality: '', date_of_birth: '', currentClass: '', familyId: '' }
+  form.value = { ...form.value, full_name: '', gender: '', nationality: '', date_of_birth: '', current_class: '', familyId: '' }
   showFormModal.value = true
 }
 
+
 const openEditModal = (student) => {
-  isEdit.value = true
-  currentStudent.value = student
-  form.value = { ...student }
-  showFormModal.value = true
-}
+
+
+  isEdit.value = true;
+  currentStudent.value = student;
+
+  form.value = {
+    full_name: student.user.full_name || '',
+    gender: student.user.gender || '',
+    nationality: student.user.nationality || '',
+    date_of_birth: student.user.date_of_birth || '',
+
+    current_class: student.current_class || '',
+    classSeekingAdmissionTo: student.class_seeking_admission_to || '',
+
+    familyId: '',
+
+    immunized: student.is_immunized === 'yes',
+    allergies: student.has_allergies === 'yes',
+    allergic_foods: student.allergic_foods || '',
+    hasPeculiarHealthIssues: student.has_peculiar_health_issues === 'yes',
+    health_issues: student.health_issues || '',
+
+    name_of_father: student.name_of_father || '',
+    occupation_of_father: student.occupation_of_father || '',
+    contact_of_father: student.contact_of_father || '',
+    nationality_of_father: student.nationality_of_father || '',
+
+    name_of_mother: student.name_of_mother || '',
+    occupation_of_mother: student.occupation_of_mother || '',
+    contact_of_mother: student.contact_of_mother || '',
+    nationality_of_mother: student.nationality_of_mother || '',
+
+    lastSchoolAttended: student.last_school_attended || '',
+    houseNumber: student.house_number || '',
+    otherRelatedInfo: student.other_related_info || '',
+
+    active: student.user.is_active,
+
+    staff: false,
+    role: student.user.role?.toUpperCase() || 'STUDENT',
+  };
+
+  // Fix class dropdown value
+  if (typeof student.current_class === 'string') {
+    const classOption = classOptions.find(
+      opt => opt.label.toLowerCase() === student.current_class.toLowerCase()
+    );
+    form.value.current_class = classOption ? classOption.value : '';
+  }
+
+  showFormModal.value = true;
+};
 
 const closeFormModal = () => {
   showFormModal.value = false
   currentStudent.value = null
 }
+
+const prepareStudentPayload = (payload) => {
+  return {
+    user: {
+      full_name: payload.full_name,
+      role: "student",
+      gender: payload.gender,
+      nationality: payload.nationality,
+      is_active: true,
+      is_staff: false,
+      date_of_birth: payload.date_of_birth
+    },
+    current_class: payload.current_class,
+    house_number: payload.houseNumber,
+    
+    last_school_attended: payload.lastSchoolAttended,
+    class_seeking_admission_to: payload.class_seeking_admission_to,
+    is_immunized: payload.immunized ? "yes" : "no",
+    has_allergies: payload.allergies ? "yes" : "no",
+
+    allergic_foods: payload.allergic_foods,
+
+    hasPeculiarHealthIssues: payload.hasPeculiarHealthIssues ? "yes" : "no",
+
+    contact_of_father: payload.contact_of_father,
+    contact_of_mother: payload.contact_of_mother,
+    occupation_of_father: payload.occupation_of_father,
+    occupation_of_mother: payload.occupation_of_mother,
+
+    name_of_father: payload.name_of_father,
+    name_of_mother: payload.name_of_mother,
+
+    nationality_of_father: payload.nationalityOfFather,
+    nationality_of_mother: payload.nationalityOfMother,
+
+    
+    peculiar_health_issues: payload.healthIssues,
+    other_related_info: payload.otherRelatedInfo
+  };
+};
+
+
+function formatBackendErrors(errData) {
+  if (!errData) return null;
+
+  const parts = [];
+
+  function walk(obj, prefix = "") {
+    if (Array.isArray(obj)) {
+      // leaf: array of messages
+      const msgs = obj.map(m => String(m)).join("; ");
+      parts.push(`${prefix}: ${msgs}`);
+      return;
+    }
+
+    if (typeof obj === "string") {
+      parts.push(`${prefix}: ${obj}`);
+      return;
+    }
+
+    if (obj && typeof obj === "object") {
+      for (const key of Object.keys(obj)) {
+        const value = obj[key];
+        const nextPrefix = prefix ? `${prefix}.${key}` : key;
+        walk(value, nextPrefix);
+      }
+      return;
+    }
+
+    // other types
+    parts.push(`${prefix}: ${String(obj)}`);
+  }
+
+  // If the server returned an array at the root, show those.
+  if (Array.isArray(errData)) {
+    return errData.map(x => String(x)).join(" / ");
+  }
+
+  // walk object
+  walk(errData);
+
+  // produce a single string
+  return parts.length ? parts.join(" | ") : null;
+}
+
 
 const submitForm = async () => {
   loading.value = true;
@@ -375,12 +546,55 @@ const submitForm = async () => {
 
 
     // ✅ Apply defaults BEFORE validation
-    form.value.gender = form.value.gender || 'MALE';
-    form.value.currentClass = form.value.currentClass || 'CRECHE';
+    form.value.gender = form.value.gender || 'male';
+    form.value.current_class = form.value.current_class || 'creche';
     form.value.nationality = form.value.nationality || 'Ghanaian';
     form.value.date_of_birth = form.value.date_of_birth || '2002-02-02';
 
     // ✅ Required field validation
+    
+
+    // ✅ Clean up form: trim strings and convert empty strings to null
+    function deepClean(obj) {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => {
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            return [key, trimmed === "" ? null : trimmed];
+          } else if (value && typeof value === "object") {
+            return [key, deepClean(value)];
+          }
+          return [key, value];
+        })
+      );
+    }
+
+    const cleaned = deepClean(form.value);
+
+
+      if (isEdit.value && currentStudent.value) {
+      // ✅ Update existing student
+      const payload = prepareStudentPayload(cleaned);
+      const response = await update_student(currentStudent.value.id, payload);
+
+
+
+      // Update table immediately
+      const index = students.value.findIndex(s => s.id === currentStudent.value.id);
+      if (index !== -1) {
+        students.value[index] = { ...response.data };
+      }
+
+      closeFormModal();
+
+      toast.success('Student updated successfully!', { position: 'top-right' });
+      } else {
+    // ✅ Call API and wait for response
+
+    const payload = prepareStudentPayload(cleaned);
+
+
+
     const requiredFields = [
       { field: 'full_name', label: 'Full Name' },
       { field: 'contact_of_father', label: 'Contact of Father' },
@@ -395,37 +609,8 @@ const submitForm = async () => {
       }
     }
 
-    // ✅ Clean up form: trim strings and convert empty strings to null
-    const cleanedForm = Object.fromEntries(
-      Object.entries(form.value).map(([key, value]) => {
-        if (typeof value === 'string') {
-          const trimmed = value.trim();
-          return [key, trimmed === '' ? null : trimmed];
-        }
-        return [key, value];
-      })
-    );
+    const response = await create_student(payload);
 
-    
-
-
-      if (isEdit.value && currentStudent.value) {
-      // ✅ Update existing student
-      const response = await update_student(currentStudent.value.id, cleanedForm);
-
-
-      // Update table immediately
-      const index = students.value.findIndex(s => s.id === currentStudent.value.id);
-      if (index !== -1) {
-        students.value[index] = { ...response.data };
-      }
-
-      closeFormModal();
-
-      toast.success('Student updated successfully!', { position: 'top-right' });
-      } else {
-    // ✅ Call API and wait for response
-    const response = await create_student(cleanedForm);
 
   
 
@@ -449,15 +634,22 @@ const submitForm = async () => {
       throw new Error('No response data from the server.');
     }}
 
-  } catch (error) {
+  } catch (err) {
+   
 
+  const serverData = err?.e?.response
 
-    const backendMessage =
-      error.response?.data?.message ||
-      'Failed to create student. Please check your input and try again.';
+;
+  const formatted = formatBackendErrors(serverData);
 
-    toast.error(backendMessage, { position: 'top-right' });
-  } finally {
+  const message = formatted || err?.message || "Failed to create student. Please check your input and try again.";
+  // show first line only in the toast if you want brevity:
+  const firstLine = message.split(" | ")[0];
+
+  toast.error(firstLine, { position: "top-right" });
+  // optionally show full errors in console or another UI element
+
+} finally {
     loading.value = false;
   }
 };
@@ -476,7 +668,7 @@ const confirmDelete = async () => {
   try {
     await delete_student(studentToDelete.value.id)
     students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
-    toast.success(`${studentToDelete.value.full_name} deleted successfully!`, { position: 'top-right' })
+    toast.success(`${studentToDelete.value.user.full_name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
 
     toast.error('Failed to delete student. Please try again.', { position: 'top-right' })

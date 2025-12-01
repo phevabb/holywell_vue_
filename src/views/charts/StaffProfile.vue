@@ -50,7 +50,7 @@
                 <CTableHeaderCell>Name</CTableHeaderCell>
                 
                 <CTableHeaderCell>Gender</CTableHeaderCell>
-                <CTableHeaderCell>Nationality</CTableHeaderCell>
+                
                 
                 <CTableHeaderCell>Status</CTableHeaderCell>
                 <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
@@ -66,7 +66,7 @@
                 <CTableDataCell>{{ row.user.full_name }}</CTableDataCell>
                 
                 <CTableDataCell>{{ row.user.gender }}</CTableDataCell>
-                <CTableDataCell>{{ row.user.nationality }}</CTableDataCell>
+                
                 
                 <CTableDataCell>
                   <CBadge :color="row.user.is_active ? 'success' : 'secondary'">
@@ -98,7 +98,7 @@
     <CModalTitle>Confirm Deletion</CModalTitle>
   </CModalHeader>
   <CModalBody>
-    Are you sure you want to delete <strong>{{ staffToDelete?.fullName }}</strong>?
+    Are you sure you want to delete <strong>{{ staffToDelete?.full_name }}</strong>?
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" variant="outline" @click="cancelDelete">Cancel</CButton>
@@ -116,24 +116,24 @@
     <CModalBody>
       <div class="mb-3">
         <CFormLabel>Full Name</CFormLabel>
-        <CFormInput v-model="form.fullName" />
+        <CFormInput v-model="form.user.full_name" />
       </div>
+
       <div class="mb-3">
-        <CFormLabel>Gender</CFormLabel>
-        <CFormSelect v-model="form.gender">
-          <option disabled value="">Select Gender</option>
-          <option value="MALE">Male</option>
-          <option value="FEMALE">Female</option>
-        </CFormSelect>
-      </div>
-      <div class="mb-3">
-        <CFormLabel>Nationality</CFormLabel>
-        <CFormInput v-model="form.nationality" />
-      </div>
-      <div class="mb-3">
-        <CFormLabel>Date of Birth</CFormLabel>
-        <CFormInput v-model="form.dateOfBirth" type="date" />
-      </div>
+      <CFormLabel>Gender</CFormLabel>
+      <CFormSelect v-model="form.user.gender">
+        <option disabled value="">Select Gender</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </CFormSelect>
+    </div>
+
+    <div class="mb-3">
+      <CFormLabel>Date of Birth</CFormLabel>
+      <CFormInput v-model="form.user.date_of_birth" type="date" />
+    </div>
+
+
       
       <CButton color="primary" @click="submitForm">
         {{ isEdit ? 'Update' : 'Create' }}
@@ -179,7 +179,10 @@ const confirmDelete = async () => {
   try {
     await delete_staff(staffToDelete.value.id)
     staff.value = staff.value.filter(s => s.id !== staffToDelete.value.id)
-    toast.success(`${staffToDelete.value.fullName} deleted successfully!`, { position: 'top-right' })
+
+
+
+    toast.success(`${staffToDelete.value.user.full_name} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
 
     toast.error('Failed to delete staff. Please try again.', { position: 'top-right' })
@@ -240,12 +243,15 @@ const isEdit = ref(false)
 const currentStaff = ref(null)
 
 const form = ref({
-  fullName: '',
-  gender: '',
-  nationality: '',
-  dateOfBirth: '',
-  role: 'TEACHER',
+  user: {
+    full_name: '',
+    gender: '',            // 'male' | 'female'
+
+    date_of_birth: '',     // 'YYYY-MM-DD' string for <input type="date">
+    role: "staff"
+  }
 })
+
 
 const deleteStaff = (staff) => {
   staffToDelete.value = staff
@@ -276,31 +282,44 @@ const toggleSelectAll = () => {
   }
 }
 
+
 const openAddModal = () => {
-  isEdit.value = false
-  currentStaff.value = null
+  isEdit.value = false;
+  currentStaff.value = null;
+
   form.value = {
-    fullName: '',
-    gender: '',
-    nationality: '',
-    dateOfBirth: '',
-    role: 'TEACHER',
-  }
-  showFormModal.value = true
-}
+    user: {
+      full_name: '',
+      gender: '',
+ 
+      date_of_birth: '', // match backend field name
+      role: 'staff'
+    }
+  };
+
+  showFormModal.value = true;
+};
 
 const openEditModal = (staffMember) => {
-  isEdit.value = true
-  currentStaff.value = staffMember
+  isEdit.value = true;
+  currentStaff.value = staffMember;
+
+  const user = staffMember.user || {}; // safe check
+
   form.value = {
-    fullName: staffMember.fullName,
-    gender: staffMember.gender,
-    nationality: staffMember.nationality,
-    dateOfBirth: staffMember.dateOfBirth,
-    role: staffMember.role,
-  }
-  showFormModal.value = true
-}
+    user: {
+      full_name: user.full_name || '',
+      gender: user.gender ? user.gender.toLowerCase() : '',
+     
+      date_of_birth: user.date_of_birth || '',
+      role: user.role || 'staff'
+    }
+  };
+
+  showFormModal.value = true;
+};
+
+
 
 const closeFormModal = () => {
   showFormModal.value = false
@@ -308,91 +327,67 @@ const closeFormModal = () => {
 }
 
 const submitForm = async () => {
-
   loading.value = true;
 
   try {
-
-    form.value.role = 'TEACHER';
-    form.value.gender = form.value.gender || "MALE";
-    form.value.nationality = form.value.nationality || "Ghanaian";
-    form.value.dateOfBirth = form.value.dateOfBirth || '2002-02-02';
-
-    // ✅ Required field validation
-    const requiredFields = [
-      { field: 'fullName', label: 'Full Name' },
-      { field: 'gender', label: 'Gender' },
-     
-    ];
-
-    for (const { field, label } of requiredFields) {
-      if (!form.value[field] || form.value[field].toString().trim() === '') {
-        toast.error(`${label} is required`, { position: 'top-right' });
-        loading.value = false;
-        return;
-      }
+    
+    function deepClean(obj) {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => {
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            return [key, trimmed === "" ? null : trimmed];
+          } else if (value && typeof value === "object") {
+            return [key, deepClean(value)];
+          }
+          return [key, value];
+        })
+      );
     }
 
-    // ✅ Clean up form: trim strings and convert empty strings to null
-    const cleanedForm = Object.fromEntries(
-      Object.entries(form.value).map(([key, value]) => {
-        if (typeof value === 'string') {
-          const trimmed = value.trim();
-          return [key, trimmed === '' ? null : trimmed];
-        }
-        return [key, value];
-      })
-    );
+    const cleaned = deepClean(form.value);
+
+    // Ensure lowercase gender
+    if (cleaned.user.gender) {
+      cleaned.user.gender = cleaned.user.gender.toLowerCase();
+    }
 
 
 
     if (isEdit.value && currentStaff.value) {
-      const response = await update_staff(currentStaff.value.id, cleanedForm);
-      
-     // Update table immediately
-      const index = staff.value.findIndex(s => s.id === currentStaff.value.id);
-      if (index !== -1) {
-        staff.value[index] = { ...response.data };
+      const response = await update_staff(currentStaff.value.id, cleaned);
+      toast.success("Staff updated!");
+    } else {
+      let finalPayload = JSON.parse(JSON.stringify(cleaned));
+
+      // ensure gender exists
+      if (!finalPayload.user.gender) {
+        finalPayload.user.gender = "male";
       }
 
-      closeFormModal();
-
-      toast.success('staff updated successfully!', { position: 'top-right' });
-      } else {
-    // ✅ Call API and wait for response
-    const response = await create_staff(cleanedForm);
-
-    if (response && response.data) {
-    
+      // ensure date_of_birth exists
+      if (!finalPayload.user.date_of_birth) {
+        finalPayload.user.date_of_birth = "2002-02-02";
+      }
 
 
-      staff.value.push(response.data);
 
-      toast.success('Staff created successfully!', { position: 'top-right' });
+const response = await create_staff(finalPayload);
 
-      // ✅ Close modal after success
-      closeFormModal();
 
-      // ✅ OPTIONAL: Delay navigation slightly to ensure UI update
-      setTimeout(() => {
-        router.push({ path: '/staff' });
-      }, 500);
-    } else {
-      throw new Error('No response data from the server.');
-    }}
+      toast.success("Staff created!");
+    }
+
+    closeFormModal();
+    fetchStaff();
 
   } catch (error) {
-  
-    const backendMessage =
-      error.response?.data?.message ||
-      'Failed to create staff. Please check your input and try again.';
 
-    toast.error(backendMessage, { position: 'top-right' });
+    toast.error("Failed to save staff.");
   } finally {
     loading.value = false;
   }
-}
-
+};
 
 
 

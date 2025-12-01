@@ -199,39 +199,11 @@
     <!-- Amount Paid -->
 
     <!-- Amount Paid -->
-<div class="mb-3">
-  <CFormLabel for="amount_paid">Amount Paid</CFormLabel>
-  <CFormInput
-    id="amount_paid"
-    type="number"
-    v-model="formRecord.amount_paid"
-    placeholder="Enter amount paid"
-  />
-</div>
 
-<!-- Balance (Readonly) -->
-<div class="mb-3">
-  <CFormLabel for="balance">Balance</CFormLabel>
-  <CFormInput
-    id="balance"
-    type="number"
-    :value="computedBalance"
-    readonly
-  />
-</div>
+
+
 
 <!-- Fully Paid -->
-<div class="mb-3 form-check">
-  <input
-    class="form-check-input"
-    type="checkbox"
-    id="is_fully_paid"
-    v-model="formRecord.is_fully_paid"
-  />
-  <label class="form-check-label" for="is_fully_paid">
-    Fully Paid
-  </label>
-</div>
 
    
 

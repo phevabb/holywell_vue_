@@ -121,9 +121,9 @@ const loading = ref(false)
 const academicYearsLoading = ref(false)
 
 const termOptions = [
-  { label: '1st Term', value: 'FIRST_TERM' },
-  { label: '2nd Term', value: 'SECOND_TERM' },
-  { label: '3rd Term', value: 'THIRD_TERM' }
+  { label: '1st Term', value: '1st Term' },
+  { label: '2nd Term', value: '2nd Term' },
+  { label: '3rd Term', value: '3rd Term' }
 ]
 
 const academicYears = ref([])
@@ -201,11 +201,12 @@ const openAddModal = () => {
 }
 
 const openEditModal = (term) => {
+
   isEdit.value = true
   currentTerm.value = term
   form.value = {
     name: term.name,
-    academicYearId: term.academicYear?.id || ''
+    academicYearId: term.academic_year?.id || '333'
   }
   showFormModal.value = true
 }
@@ -226,13 +227,13 @@ const submitForm = async () => {
   try {
     const payload = {
       name: form.value.name,
-      academicYearId: form.value.academicYearId
+      academic_year_id: form.value.academicYearId
     }
 
     if (isEdit.value && currentTerm.value) {
       const payload = {
   name: form.value.name,
-  academicYear: { id: form.value.academicYearId }
+  academic_year_id:  form.value.academicYearId 
 }
 
       const t = await update_term(currentTerm.value.id, payload)
@@ -240,6 +241,7 @@ const submitForm = async () => {
 
       toast.success('Term updated successfully')
     } else {
+
       await create_term(payload)
       toast.success('Term created successfully')
     }

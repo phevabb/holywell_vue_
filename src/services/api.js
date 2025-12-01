@@ -1,12 +1,18 @@
 import axios from 'axios';
 
 const api = axios.create({
-  /*baseURL: 'https://kogschoolmanagementsystem-phevabb2997-w0rp7kqd.leapcell.dev/api/',*/
-
  
-  baseURL: ' https://feessystem-aidooemmanuelkwame1416-zluuv6f0.leapcell.dev/api',
 
-  /* baseURL: 'http://127.0.0.1:8000/api/', */
+  
+  baseURL: ' https://feessystem-aidooemmanuelkwame1416-zluuv6f0.leapcell.dev/api/',
+  
+
+  /*baseURL: 'http://127.0.0.1:8000/api/', */
+
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 });
 
 export const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -25,7 +31,7 @@ export const delete_payment = (id) => api.delete(`fees/payments/${id}/`);
 // Student APIs
 export const st = () => api.get("student/students");
 export const create_student = (payload) => api.post("student/create/", payload);
-export const update_student = (id, payload) => api.put(`student/students/${id}/`, payload);
+export const update_student = (id, payload) => api.put(`student/create/${id}/`, payload);
 export const delete_student = (id) => api.delete(`student/students/${id}/`);
 
 // student fee records APIs
@@ -59,7 +65,7 @@ export const delete_class = (id) => api.delete(`student/classes/${id}/`);
 // staff APIs
 export const get_staff = () => api.get("staff/staff-profiles");
 export const create_staff = (payload) => api.post("staff/staff-profiles/", payload);  
-export const update_staff = (id, payload) => api.put(`staff/staff-profiles/${id}/`, payload);
+export const update_staff = (id, payload) => api.patch(`staff/staff-profiles/${id}/`, payload);
 export const delete_staff = (id) => api.delete(`staff/staff-profiles/${id}/`);
 
 // academic year APIs

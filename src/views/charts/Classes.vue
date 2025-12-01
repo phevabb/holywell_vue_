@@ -97,7 +97,7 @@
   <CFormSelect v-model="form.staff">
     <option value="">No Staff Assigned</option>
     <option v-for="staff in staff" :key="staff.id" :value="staff.id">
-      {{ staff.full_name }}
+            {{ staff.full_name }}
     </option>
   </CFormSelect>
 
@@ -140,6 +140,7 @@ async function fetchClasses() {
     const response = await get_classes();
 
     const response_for_staff = await get_staff();
+  
 
 
     staff.value = response_for_staff.data.map(item => item.user);
@@ -173,9 +174,9 @@ const gradeClasses = ref([])
 
 
 const classOptions = [
-  'CRECHE', 'NURSERY_1', 'NURSERY_2', 'KG_1', 'KG_2',
-  'CLASS_1', 'CLASS_2', 'CLASS_3', 'CLASS_4', 'CLASS_5', 'CLASS_6',
-  'JHS_1', 'JHS_2', 'JHS_3'
+  'creche', 'nursery 1', 'nursery 2', 'kg 1', 'kg 2',
+  'class 1', 'class 2', 'class 3', 'class 4', 'class 5', 'class 6',
+  'jhs 1', 'jhs 2', 'jhs 3'
 ]
 
 const searchTerm = ref('')
@@ -200,11 +201,12 @@ const openAddModal = () => {
 }
 
 const openEditModal = (cls) => {
+
   isEdit.value = true
   currentClass.value = cls
   form.value = {
     name: cls.name,
-    staff: cls.staff || ''
+    staff: cls.staff.user.id || ' '
   }
   showFormModal.value = true
 }
@@ -217,7 +219,7 @@ const closeFormModal = () => {
 const submitForm = async () => {
   loading.value = true;
 
-  form.value.name = form.value.name || 'CRECHE';
+  form.value.name = form.value.name || 'creche';
 
   try {
     // ✅ Validate required field: Class Name
@@ -229,9 +231,9 @@ const submitForm = async () => {
 
     // ✅ Validate class name against allowed options
     const validClasses = [
-      'CRECHE', 'NURSERY_1', 'NURSERY_2', 'KG_1', 'KG_2',
-      'CLASS_1', 'CLASS_2', 'CLASS_3', 'CLASS_4', 'CLASS_5', 'CLASS_6',
-      'JHS_1', 'JHS_2', 'JHS_3'
+      'creche', 'nursery 1', 'nursery 2', 'kg 1', 'kg 2',
+      'class 1', 'class 2', 'class 3', 'class 4', 'class 5', 'class 6',
+      'jhs 1', 'jhs 2', 'jhs 3'
     ];
     if (!validClasses.includes(form.value.name)) {
       toast.error('Invalid class name selected', { position: 'top-right' });
@@ -239,19 +241,12 @@ const submitForm = async () => {
       return;
     }
 
-    // ✅ Normalize: convert empty strings to null
-    const cleanedForm = {
-      name: form.value.name.trim(),
-      staff: form.value && form.value.staff.trim() !== '' ? form.value.staff : null
-    };
+   
 
     const cleanedForm2 = {
   name: form.value.name.trim(),
-  staff: form.value.staff && form.value.staff !== ''
-    ? {
-        id: form.value.staff
-      }
-    : null
+  user_id: Number(form.value.staff)
+
 };
 
 
@@ -259,34 +254,43 @@ const submitForm = async () => {
 
 
 
-    let response;
-    if (isEdit.value && currentClass.value) {
-      // Update class
-      response = await update_class(currentClass.value.id, cleanedForm2);
 
-      const index = gradeClasses.value.findIndex(c => c.id === currentClass.value.id);
-      if (index !== -1) {
-  const updatedClass = response.data;
-  
-  // attach full staff object if found in list
-  if (updatedClass.staff?.id) {
-    const matchedStaff = staff.value.find(s => s.id === updatedClass.staff.id);
-    if (matchedStaff) updatedClass.staff = matchedStaff;
+
+
+let response;
+
+// ✅ Do not touch currentClass.value.id unless you know you're in edit mode
+if (isEdit.value && currentClass.value?.id) {
+
+
+  response = await update_class(currentClass.value.id, cleanedForm2);
+  log("response from update", response);
+
+  const index = gradeClasses.value.findIndex(c => c.id === currentClass.value.id);
+  if (index !== -1) {
+    const updatedClass = response.data;
+
+    if (updatedClass.staff?.id) {
+      const matchedStaff = staff.value.find(s => s.id === updatedClass.staff.id);
+      if (matchedStaff) updatedClass.staff = matchedStaff;
+    }
+
+    gradeClasses.value[index] = updatedClass;
   }
 
-  gradeClasses.value[index] = updatedClass;
+  toast.success('Class updated successfully!', { position: 'top-right' });
+} else {
+
+  response = await create_class(cleanedForm2);
+
+  gradeClasses.value.push(response.data);
+  toast.success('Class created successfully!', { position: 'top-right' });
 }
-      toast.success('Class updated successfully!', { position: 'top-right' });
-    } else {
-      // Create class
-      response = await create_class(cleanedForm);
-      gradeClasses.value.push(response.data);
-      toast.success('Class created successfully!', { position: 'top-right' });
-    }
 
     closeFormModal();
 
   } catch (err) {
+
 
     const backendMessage = err.response?.data?.message || 'Failed to submit form.';
     toast.error(backendMessage, { position: 'top-right' });
@@ -294,6 +298,8 @@ const submitForm = async () => {
     loading.value = false;
   }
 };
+
+
 const deleteClass = (cs) => {
   classToDelete.value = cs
   showDeleteModal.value = true

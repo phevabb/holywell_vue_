@@ -144,6 +144,49 @@
 
   
 
+<CModal :visible="showDeleteSingleModal" @close="closeDeleteSingleModal">
+  <CModalHeader>
+    <CModalTitle>Confirm Delete</CModalTitle>
+  </CModalHeader>
+
+  <CModalBody>
+    Are you sure you want to delete this payment?
+  </CModalBody>
+
+  <div class="d-flex justify-content-end gap-2 p-3">
+    <CButton color="secondary" @click="closeDeleteSingleModal">
+      Cancel
+    </CButton>
+
+    <CButton color="danger" :disabled="isDeleting" @click="handleDeletePayment">
+      <span v-if="!isDeleting">Delete</span>
+      <span v-else>Deleting…</span>
+    </CButton>
+  </div>
+</CModal>
+
+
+<CModal :visible="showBulkDeleteModal" @close="closeBulkDeleteModal">
+  <CModalHeader>
+    <CModalTitle>Confirm Bulk Delete</CModalTitle>
+  </CModalHeader>
+
+  <CModalBody>
+    You are about to delete {{ selectedIds.length }} payment(s).
+    This action cannot be undone.
+  </CModalBody>
+
+  <div class="d-flex justify-content-end gap-2 p-3">
+    <CButton color="secondary" @click="closeBulkDeleteModal">
+      Cancel
+    </CButton>
+
+    <CButton color="danger" :disabled="isDeletingBulk" @click="handleBulkDelete">
+      <span v-if="!isDeletingBulk">Delete All</span>
+      <span v-else>Deleting…</span>
+    </CButton>
+  </div>
+</CModal>
 
 
   
@@ -169,6 +212,8 @@ import {
 
 import { useToast } from 'vue-toastification'
 const toast = useToast()
+const showBulkDeleteModal = ref(false)
+const isDeletingBulk = ref(false)
 
 
 const isDeleting = ref(false)
@@ -424,12 +469,30 @@ const openSingleDeleteConfirm = async (payment) => {
 }
 
 
-const openBulkDeleteConfirm = async () => {
-  await bulkDeletePayments(selectedIds.value)
-selectedIds.value = []
-await fetchPayments()
-
+const openBulkDeleteConfirm = () => {
+  if (selectedIds.value.length === 0) return
+  showBulkDeleteModal.value = true
 }
+const closeBulkDeleteModal = () => {
+  showBulkDeleteModal.value = false
+}
+
+const handleBulkDelete = async () => {
+  if (selectedIds.value.length === 0) return
+
+  isDeletingBulk.value = true
+  try {
+    await bulkDeletePayments(selectedIds.value)
+    selectedIds.value = []
+    await fetchPayments()
+    closeBulkDeleteModal()
+  } catch (err) {
+    // error is already handled in bulkDeletePayments
+  } finally {
+    isDeletingBulk.value = false
+  }
+} 
+
 </script>
 
 <style scoped>

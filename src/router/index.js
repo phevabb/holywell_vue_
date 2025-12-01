@@ -87,14 +87,6 @@ const routes = [
         component: () => import('@/views/charts/Terms.vue'),
       },
 
-      
-      
-
-
-
-      
-
-
       {
         path: '/widgets',
         name: 'Widgets',
