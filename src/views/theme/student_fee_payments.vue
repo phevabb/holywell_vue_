@@ -315,20 +315,35 @@ const paymentApi = (() => {
       }
     },
 
-    async createPayment(payload) {
-      try {
-        // payload: { studentFeeRecordId, date?, amount }
+    
+async createPayment(payload) {
+  try {
+    // payload: { studentFeeRecordId, date?, amount, payment_method? }
+    const response = await create_payment(payload)
+
    
-        const response = await create_payment(payload)
 
+    // Axios response: receipt_url is in response.data
+    const data = response?.data ?? response
 
-        return response.data || response
+    if (data?.receipt_url) {
+      // ✅ Auto-download via an anchor click; server sets the filename
+      const link = document.createElement('a')
+      link.href = data.receipt_url
+      link.download = '' // optional: leave blank to use server filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
 
-      } catch (error) {
-
-        throw error
-      }
-    },
+    // Return the data for any further UI updates
+    return data
+  } catch (error) {
+    // Bubble up for global handler/toast
+    throw error
+  }
+}
+,
 
 
     async deletePayment(id) {
