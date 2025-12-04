@@ -317,20 +317,44 @@ onMounted(() => {
 
 const classOptions = [
   { label: 'Creche', value: 1 },
-  { label: 'Nursery 1', value: 2 },
-  { label: 'Nursery 2', value: 3 },
-  { label: 'KG 1', value: 4 },
-  { label: 'KG 2', value: 5 },
-  { label: 'Class 1', value: 6 },
-  { label: 'Class 2', value: 7 },
-  { label: 'Class 3', value: 8 },
-  { label: 'Class 4', value: 9 },
-  { label: 'Class 5', value: 10 },
-  { label: 'Class 6', value: 11 },
-  { label: 'JHS 1', value: 12 },
-  { label: 'JHS 2', value: 13 },
-  { label: 'JHS 3', value: 14 },
+
+  { label: 'Nursery 1A', value: 2 },
+  { label: 'Nursery 1B', value: 3 },
+
+  { label: 'Nursery 2A', value: 4 },
+  { label: 'Nursery 2B', value: 5 },
+
+  { label: 'KG 1A', value: 6 },
+  { label: 'KG 1B', value: 7 },
+
+  { label: 'KG 2A', value: 8 },
+  { label: 'KG 2B', value: 9 },
+
+  { label: 'Basic 1A', value: 10 },
+  { label: 'Basic 1B', value: 11 },
+
+  { label: 'Basic 2A', value: 12 },
+  { label: 'Basic 2B', value: 13 },
+
+  { label: 'Basic 3A', value: 14 },
+  { label: 'Basic 3B', value: 15 },
+
+  { label: 'Basic 4A', value: 16 },
+  { label: 'Basic 4B', value: 17 },
+
+  { label: 'Basic 5A', value: 18 },
+  { label: 'Basic 5B', value: 19 },
+
+  { label: 'Basic 6A', value: 20 },
+  { label: 'Basic 6B', value: 21 },
+
+  { label: 'Basic 7A', value: 22 },
+  { label: 'Basic 7B', value: 23 },
+
+  { label: 'Basic 8', value: 24 },
+  { label: 'Basic 9', value: 25 },
 ]
+
 
 
 const searchTerm = ref('')

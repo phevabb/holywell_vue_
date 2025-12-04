@@ -174,10 +174,45 @@ const gradeClasses = ref([])
 
 
 const classOptions = [
-  'creche', 'nursery 1', 'nursery 2', 'kg 1', 'kg 2',
-  'class 1', 'class 2', 'class 3', 'class 4', 'class 5', 'class 6',
-  'jhs 1', 'jhs 2', 'jhs 3'
+  'Creche',
+
+  'Nursery 1A',
+  'Nursery 1B',
+
+  'Nursery 2A',
+  'Nursery 2B',
+
+  'KG 1A',
+  'KG 1B',
+
+  'KG 2A',
+  'KG 2B',
+
+  'Basic 1A',
+  'Basic 1B',
+
+  'Basic 2A',
+  'Basic 2B',
+
+  'Basic 3A',
+  'Basic 3B',
+
+  'Basic 4A',
+  'Basic 4B',
+
+  'Basic 5A',
+  'Basic 5B',
+
+  'Basic 6A',
+  'Basic 6B',
+
+  'Basic 7A',
+  'Basic 7B',
+
+  'Basic 8',
+  'Basic 9',
 ]
+
 
 const searchTerm = ref('')
 const showFormModal = ref(false)

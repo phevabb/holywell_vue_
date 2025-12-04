@@ -180,20 +180,27 @@ const deleteYear = (year) => {
   yearToDelete.value = year
   showDeleteModal.value = true
 }
-
 const confirmDelete = async () => {
   if (!yearToDelete.value) return
   loading.value = true
   showDeleteModal.value = false
 
+  // save data to use later
+  const idToDelete = yearToDelete.value.id
+  const nameToDelete = yearToDelete.value.name
+
   try {
-    await delete_academic_year(yearToDelete.value.id)
-    academicYears.value = academicYears.value.filter(y => y.id !== yearToDelete.value.id)
-    toast.success(`${yearToDelete.value.name} deleted successfully!`, { position: 'top-right' })
+    const response = await delete_academic_year(idToDelete)
+    console.log('Delete response:', response)
+
+    academicYears.value = academicYears.value.filter(y => y.id !== idToDelete)
+    toast.success(`${nameToDelete} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-
-    toast.error('Cannot delete this academic year because it is linked to other records.', { position: 'top-right' })
-
+    console.error('Delete error:', error)
+    toast.error(
+      'Cannot delete this academic year because it is linked to other records.',
+      { position: 'top-right' }
+    )
   } finally {
     loading.value = false
     yearToDelete.value = null
