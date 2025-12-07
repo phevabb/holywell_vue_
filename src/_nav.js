@@ -8,6 +8,7 @@ export default [
       color: 'primary',
       text: 'NEW',
     },
+    role: ['administrator', 'principal'], 
   },
   {
     component: 'CNavTitle',
@@ -16,6 +17,7 @@ export default [
   {
     component: 'CNavItem',
     name: 'Fee Structure',
+    role: ['administrator'],
     to: '/fees/student-fee-structure',  /* CHANGE HERE */
     
     icon: 'cil-spreadshee',
@@ -23,12 +25,14 @@ export default [
   {
     component: 'CNavItem',
     name: 'Payments',       /* CHANGE HERE */
+    role: ['administrator'],
     to: '/fees/student-fee-payments',
     icon: 'cil-pencil',
   },
   {
     component: 'CNavItem',
     name: 'Student Fee Records',
+    role: ['administrator'],
     to: '/fees/student-fee-records ',
     icon: 'cil-pencil',
   },
@@ -41,6 +45,7 @@ export default [
     component: 'CNavItem',
     name: 'Families',
     to: '/fees/family',
+    role: ['administrator'],
     icon: 'cil-chart-pie',
   },
   {

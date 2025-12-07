@@ -17,6 +17,10 @@ const api = axios.create({
 
 export const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
+// AUTH APIs
+
+export const login = (payload) => api.post("login/", payload);
+
 // fee structure APIs 
 export const get_fee_structures = () => api.get("fees/fee-structures"); // APPLIED
 export const create_fee_structure = (payload) => api.post("fees/fee-structures/", payload); // APPLIED

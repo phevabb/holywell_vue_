@@ -1,42 +1,35 @@
+
+// src/components/AppSidebarNav.js
 import { defineComponent, h, onMounted, ref, resolveComponent } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
-import { cilExternalLink } from '@coreui/icons'
 import { CBadge, CSidebarNav, CNavItem, CNavGroup, CNavTitle } from '@coreui/vue'
-import nav from '@/_nav.js'
+
+
+import adminNav from '@/2_administrator_Box/admin_nav'
+import principalNav from '@/1_principal_Box/principal_nav'
 
 import simplebar from 'simplebar-vue'
 import 'simplebar-vue/dist/simplebar.min.css'
 
 const normalizePath = (path) =>
-  decodeURI(path)
-    .replace(/#.*$/, '')
-    .replace(/(index)?\.(html)$/, '')
+  decodeURI(path).replace(/#.*$/, '').replace(/(index)?\.(html)$/, '')
 
 const isActiveLink = (route, link) => {
-  if (link === undefined) {
+  if (link === undefined) return false
+  if (typeof link === 'object') {
+    // If using name-based `to`, rely on RouterLink's `props.isActive`
     return false
   }
-
-  if (route.hash === link) {
-    return true
-  }
-
+  if (route.hash === link) return true
   const currentPath = normalizePath(route.path)
   const targetPath = normalizePath(link)
-
   return currentPath === targetPath
 }
 
 const isActiveItem = (route, item) => {
-  if (isActiveLink(route, item.to)) {
-    return true
-  }
-
-  if (item.items) {
-    return item.items.some((child) => isActiveItem(route, child))
-  }
-
+  if (isActiveLink(route, item.to)) return true
+  if (item.items) return item.items.some((child) => isActiveItem(route, child))
   return false
 }
 
@@ -50,10 +43,20 @@ const AppSidebarNav = defineComponent({
   setup() {
     const route = useRoute()
     const firstRender = ref(true)
+    onMounted(() => { firstRender.value = false })
 
-    onMounted(() => {
-      firstRender.value = false
-    })
+    // Read role saved during login
+    const userRaw = localStorage.getItem('user')
+
+    console.log('AppSidebarNav userRaw: print', userRaw)
+    const user = userRaw ? JSON.parse(userRaw) : null
+    const role = user?.role
+    console.log('AppSidebarNav role: print', role)
+    const nav = role === 'administrator'
+      ? adminNav
+      : role === 'principal'
+      ? principalNav
+      : [] // default empty (or a minimal nav)
 
     const renderItem = (item) => {
       if (item.items) {
@@ -90,29 +93,14 @@ const AppSidebarNav = defineComponent({
           {
             default: () => [
               item.icon
-                ? h(resolveComponent('CIcon'), {
-                    customClassName: 'nav-icon',
-                    name: item.icon,
-                  })
+                ? h(resolveComponent('CIcon'), { customClassName: 'nav-icon', name: item.icon })
                 : h('span', { class: 'nav-icon' }, h('span', { class: 'nav-icon-bullet' })),
               item.name,
               item.external && h(resolveComponent('CIcon'), {
-                class: 'ms-2',
-                name: 'cil-external-link',
-                size: 'sm'
+                class: 'ms-2', name: 'cil-external-link', size: 'sm',
               }),
               item.badge &&
-                h(
-                  CBadge,
-                  {
-                    class: 'ms-auto',
-                    color: item.badge.color,
-                    size: 'sm',
-                  },
-                  {
-                    default: () => item.badge.text,
-                  },
-                ),
+                h(CBadge, { class: 'ms-auto', color: item.badge.color, size: 'sm' }, { default: () => item.badge.text }),
             ],
           },
         )
@@ -121,10 +109,7 @@ const AppSidebarNav = defineComponent({
       return item.to
         ? h(
             RouterLink,
-            {
-              to: item.to,
-              custom: true,
-            },
+            { to: item.to, custom: true },
             {
               default: (props) =>
                 h(
@@ -138,49 +123,24 @@ const AppSidebarNav = defineComponent({
                   {
                     default: () => [
                       item.icon
-                        ? h(resolveComponent('CIcon'), {
-                            customClassName: 'nav-icon',
-                            name: item.icon,
-                          })
+                        ? h(resolveComponent('CIcon'), { customClassName: 'nav-icon', name: item.icon })
                         : h('span', { class: 'nav-icon' }, h('span', { class: 'nav-icon-bullet' })),
                       item.name,
                       item.badge &&
-                        h(
-                          CBadge,
-                          {
-                            class: 'ms-auto',
-                            color: item.badge.color,
-                            size: 'sm',
-                          },
-                          {
-                            default: () => item.badge.text,
-                          },
-                        ),
+                        h(CBadge, { class: 'ms-auto', color: item.badge.color, size: 'sm' }, { default: () => item.badge.text }),
                     ],
                   },
                 ),
             },
           )
-        : h(
-            resolveComponent(item.component),
-            {
-              as: 'div',
-            },
-            {
-              default: () => item.name,
-            },
-          )
+        : h(resolveComponent(item.component), { as: 'div' }, { default: () => item.name })
     }
 
     return () =>
       h(
         CSidebarNav,
-        {
-          as: simplebar,
-        },
-        {
-          default: () => nav.map((item) => renderItem(item)),
-        },
+        { as: simplebar },
+        { default: () => nav.map((item) => renderItem(item)) },
       )
   },
 })
