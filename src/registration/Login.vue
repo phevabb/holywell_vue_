@@ -66,7 +66,7 @@
                     </CCol>
                     <CCol :xs="6" class="text-right">
                       <CButton color="link" class="px-0" type="button">
-                        Forgot password?
+                         <router-link to="/reset-password">Forgot password?</router-link>
                       </CButton>
                     </CCol>
                   </CRow>
@@ -78,13 +78,14 @@
               <CCardBody class="text-center">
                 <div>
                   <h2>Sign up</h2>
+                  <hr />
                   <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit,
-                    sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                  </p>
-                  <CButton color="light" variant="outline" class="mt-3" type="button">
-                    Register Now!
-                  </CButton>
+  Simplify school fees.<br>
+  Stay organized.<br>
+  Manage payments with ease.
+</p>
+
+                  
                 </div>
               </CCardBody>
             </CCard>

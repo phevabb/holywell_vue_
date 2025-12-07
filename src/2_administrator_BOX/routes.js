@@ -2,7 +2,7 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 export const adminRoutes = {
-  path: '/app',
+  path: '/administrator',
   component: DefaultLayout,
   meta: { requiresAuth: true, roles: ['administrator'] },
   redirect: { name: 'Dashboard' },
@@ -76,6 +76,16 @@ export const adminRoutes = {
         import('@/2_administrator_BOX/views/charts/AcademicYear.vue'),
       meta: { roles: ['administrator'] },
     },
+
+    {
+      path: 'admin_change_password',
+      name: 'admin_change_password',
+      component: () =>
+        import('@/registration/AdminPasswordChange.vue'),
+      meta: { roles: ['administrator'] },
+    },
+
+
     {
       path: 'classes',
       name: 'classes',
@@ -94,5 +104,7 @@ export const adminRoutes = {
       component: () => import('@/2_administrator_BOX/views/widgets/Widgets.vue'),
       meta: { roles: ['administrator'] },
     },
+
+    
   ],
 }

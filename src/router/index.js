@@ -3,6 +3,12 @@ import { h, resolveComponent } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { adminRoutes } from '@/2_administrator_BOX/routes'
 import { principalRoutes } from '@/1_principal_BOX/routes'
+const ResetPassword = () => import('@/registration/ResetPassword.vue') 
+const ResetPasswordDone = () => import('@/registration/ResetPasswordDone.vue')  
+const ResetPasswordConfirm = () => import('@/registration/ResetPasswordConfirm.vue') 
+const ResetPasswordSuccess = () => import('@/registration/ResetPasswordSuccess.vue')
+const ChangePasswordComplete = () => import('@/registration/ChangePasswordComplete.vue')
+
 
 import Login from '@/registration/Login.vue'
 
@@ -46,6 +52,33 @@ const routes = [
     name: 'AppLanding',
     redirect: () => roleHome(getUserFromStorage()),
   },
+  
+// Request password reset (public)
+  { path: '/reset-password', name: 'ResetPassword', component: ResetPassword },
+  { path: '/password-reset-done', name: 'ResetPasswordDone', component: ResetPasswordDone },
+
+  {
+  path: '/reset-password-confirm/:uid/:token',
+  name: 'ResetPasswordConfirm',
+  component: ResetPasswordConfirm
+},
+{
+  path: '/password-reset-success',
+  name: 'ResetPasswordSuccess',
+  component: ResetPasswordSuccess
+},
+{
+  path: '/change-password-complete',
+  name: 'ChangePasswordComplete',
+  component: ChangePasswordComplete
+},
+
+
+
+
+
+
+
 
   {
     path: '/pages',

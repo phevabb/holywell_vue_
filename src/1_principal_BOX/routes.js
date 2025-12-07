@@ -2,7 +2,7 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 export const principalRoutes = {
-  path: '/app-principal', // separate base to avoid name/path clashes
+  path: '/principal', // separate base to avoid name/path clashes
   component: DefaultLayout,
   meta: { requiresAuth: true, roles: ['principal'] },
   redirect: { name: 'PrincipalDashboard' },
@@ -12,6 +12,13 @@ export const principalRoutes = {
       name: 'PrincipalDashboard',
       component: () =>
         import('@/1_principal_BOX/views/dashboard/dashboard.vue'),
+      meta: { roles: ['principal'] },
+    },
+    {
+      path: 'principal_change_password',
+      name: 'principal_change_password',
+      component: () =>
+        import('@/registration/PrincipalChangePassword.vue'),
       meta: { roles: ['principal'] },
     },
     {

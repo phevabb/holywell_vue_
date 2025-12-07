@@ -91,4 +91,5 @@ export default [
     to: { name: 'terms' },
     icon: 'cil-chart-pie',
   },
+ 
 ]

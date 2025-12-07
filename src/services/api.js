@@ -1,25 +1,86 @@
-import axios from 'axios';
+
+import axios from 'axios'
 
 const api = axios.create({
-  
-
   baseURL: 'http://127.0.0.1:8000/api/',
-  
-  
-
-  /* */
-
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-});
+    'Accept': 'application/json',
+  },
+})
 
-export const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+// Helper: normalize to a pathname we can test
+function resolvePath(config) {
+  try {
+    const url = new URL(config.url, config.baseURL)
+    // e.g. "/api/login/" -> "api/login/"
+    return url.pathname.replace(/^\/+/, '')
+  } catch {
+    // Fallback if URL constructor fails (rare)
+    return (config.url || '').replace(/^\/+/, '')
+  }
+}
+
+api.interceptors.request.use(
+  (config) => {
+    // Let the browser set multipart boundary if FormData
+    if (config.data instanceof FormData) {
+      // Axios will remove Content-Type so the browser can set a boundary
+      delete config.headers['Content-Type']
+    }
+
+    // Determine if request is public
+    const path = resolvePath(config)          // e.g. "api/login/"
+    const publicPaths = [
+      'api/login/',                 // login
+      'api/password-reset/',        // request password reset
+      'api/password-reset/confirm/' // confirm password reset
+    ]
+    const isPublic = publicPaths.some(p => path.startsWith(p))
+
+    if (!isPublic) {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Token ${token}`
+    console.log('Authorization header set for', config.url, token)
+  } else {
+    console.warn('No token found for protected request', config.url)
+  }
+}
+
+
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// Optional: central 401/403 handling (logout or redirect)
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status
+    if (status === 401) {
+      console.warn('Unauthorized: clearing auth and redirecting to login.')
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      // Optionally: window.location.hash = '#/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+export const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
 
 // AUTH APIs
+export const login = (payload) => api.post('login/', payload)
+export const logout = () => api.post('logout/')
 
-export const login = (payload) => api.post("login/", payload);
+export const changepassword = (data) => api.post('change-password/', data);
+export const resetpassword = (data) => api.post('password-reset/', data);
+export const resetpasswordconfirm = (data) => api.post('confirm/', data);
+
+
+
 
 // fee structure APIs 
 export const get_fee_structures = () => api.get("fees/fee-structures"); // APPLIED

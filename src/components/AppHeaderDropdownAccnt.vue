@@ -1,7 +1,41 @@
 <script setup>
-import avatar from '@/assets/images/avatars/8.jpg'
+import { logout } from '@/services/api.js'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const itemsCount = 42
+const avatar = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
+
+const handleLogout = async () => {
+  try {
+    await logout()
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout failed', error)
+  }
+}
+
+const goToChangePassword = () => {
+  const user = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user"))
+    : null
+  if (!user) {
+    console.warn("No user found, cannot redirect")
+    return
+  } 
+  const role = user.role   // or your actual auth store
+
+  if (role === "principal") {
+    router.push({ name: "principal_change_password" })
+  } else if (role === "administrator") {
+    router.push({ name: "admin_change_password" })
+  } else {
+    console.warn("Unknown role, cannot redirect")
+  }
+}
+
 </script>
 
 <template>
@@ -9,6 +43,7 @@ const itemsCount = 42
     <CDropdownToggle class="py-0 pe-0" :caret="false">
       <CAvatar :src="avatar" size="md" />
     </CDropdownToggle>
+
     <CDropdownMenu class="pt-0">
       <CDropdownHeader
         component="h6"
@@ -16,41 +51,27 @@ const itemsCount = 42
       >
         Account
       </CDropdownHeader>
-      <CDropdownItem>
-        <CIcon icon="cil-bell" /> Updates
-        <CBadge color="info" class="ms-auto">{{ itemsCount }}</CBadge>
+
+     
+
+    
+     
+
+   
+
+      <CDropdownItem  @click="goToChangePassword" style="cursor:pointer;"><CIcon icon="cil-shield-alt" /> 
+        Change Password
       </CDropdownItem>
-      <CDropdownItem>
-        <CIcon icon="cil-envelope-open" /> Messages
-        <CBadge color="success" class="ms-auto">{{ itemsCount }}</CBadge>
+
+      <CDropdownItem @click="handleLogout" style="cursor:pointer;">
+        <CIcon icon="cil-lock-locked" /> Logout
       </CDropdownItem>
-      <CDropdownItem>
-        <CIcon icon="cil-task" /> Tasks
-        <CBadge color="danger" class="ms-auto">{{ itemsCount }}</CBadge>
-      </CDropdownItem>
-      <CDropdownItem>
-        <CIcon icon="cil-comment-square" /> Comments
-        <CBadge color="warning" class="ms-auto">{{ itemsCount }}</CBadge>
-      </CDropdownItem>
-      <CDropdownHeader
-        component="h6"
-        class="bg-body-secondary text-body-secondary fw-semibold my-2"
-      >
-        Settings
-      </CDropdownHeader>
-      <CDropdownItem> <CIcon icon="cil-user" /> Profile </CDropdownItem>
-      <CDropdownItem> <CIcon icon="cil-settings" /> Settings </CDropdownItem>
-      <CDropdownItem>
-        <CIcon icon="cil-dollar" /> Payments
-        <CBadge color="secondary" class="ms-auto">{{ itemsCount }}</CBadge>
-      </CDropdownItem>
-      <CDropdownItem>
-        <CIcon icon="cil-file" /> Projects
-        <CBadge color="primary" class="ms-auto">{{ itemsCount }}</CBadge>
-      </CDropdownItem>
-      <CDropdownDivider />
-      <CDropdownItem> <CIcon icon="cil-shield-alt" /> Lock Account </CDropdownItem>
-      <CDropdownItem> <CIcon icon="cil-lock-locked" /> Logout </CDropdownItem>
+
+      
+
+      
+
+      
     </CDropdownMenu>
   </CDropdown>
 </template>
