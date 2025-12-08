@@ -2,23 +2,41 @@
 import { onMounted, ref } from 'vue'
 import { CChart } from '@coreui/vue-chartjs'
 import { getStyle } from '@coreui/utils'
+import { get_num_of_students_insignt } from '../../../services/api'
+import { num_of_staff_insight } from '../../../services/api'
 
 const widgetChartRef1 = ref()
 const widgetChartRef2 = ref()
+const num_of_students = ref(0)
+const num_of_staff = ref(0)
 
-onMounted(() => {
-  document.documentElement.addEventListener('ColorSchemeChange', () => {
-    if (widgetChartRef1.value) {
-      widgetChartRef1.value.chart.data.datasets[0].pointBackgroundColor = getStyle('--cui-primary')
-      widgetChartRef1.value.chart.update()
-    }
+onMounted(async () => {
+  try {
+    const k = await get_num_of_students_insignt()  // wait for the Promise to resolve
+    const num_staff = await num_of_staff_insight()
+    console.log("num_of_staff", num_staff)
 
-    if (widgetChartRef2.value) {
-      widgetChartRef2.value.chart.data.datasets[0].pointBackgroundColor = getStyle('--cui-info')
-      widgetChartRef2.value.chart.update()
-    }
-  })
+    num_of_students.value = k.data.total  // assign the resolved total
+    num_of_staff.value = num_staff.data.total_teachers  // assign the resolved total teachers
+
+    console.log('Number of students value:', num_of_students.value)
+
+    document.documentElement.addEventListener('ColorSchemeChange', () => {
+      if (widgetChartRef1.value) {
+        widgetChartRef1.value.chart.data.datasets[0].pointBackgroundColor = getStyle('--cui-primary')
+        widgetChartRef1.value.chart.update()
+      }
+
+      if (widgetChartRef2.value) {
+        widgetChartRef2.value.chart.data.datasets[0].pointBackgroundColor = getStyle('--cui-info')
+        widgetChartRef2.value.chart.update()
+      }
+    })
+  } catch (err) {
+    console.error('Failed to fetch number of students:', err)
+  }
 })
+
 </script>
 
 <template>
@@ -26,20 +44,16 @@ onMounted(() => {
     <CCol :sm="6" :xl="4" :xxl="3">
       <CWidgetStatsA color="primary">
         <template #value
-          >26K
-          <span class="fs-6 fw-normal"> (-12.4% <CIcon icon="cil-arrow-bottom" />) </span>
+          >{{ num_of_students }}
+          <span class="fs-6 fw-normal">  </span>
         </template>
-        <template #title>Users</template>
+        <template #title>Active Students</template>
         <template #action>
           <CDropdown placement="bottom-end">
             <CDropdownToggle color="transparent" class="p-0 text-white" :caret="false">
               <CIcon icon="cil-options" class="text-white" />
             </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem href="#">Action</CDropdownItem>
-              <CDropdownItem href="#">Another action</CDropdownItem>
-              <CDropdownItem href="#">Something else here</CDropdownItem>
-            </CDropdownMenu>
+            
           </CDropdown>
         </template>
         <template #chart>
@@ -110,10 +124,10 @@ onMounted(() => {
     <CCol :sm="6" :xl="4" :xxl="3">
       <CWidgetStatsA color="info">
         <template #value
-          >$6.200
-          <span class="fs-6 fw-normal"> (40.9% <CIcon icon="cil-arrow-top" />) </span>
+          >{{num_of_staff}}
+          <span class="fs-6 fw-normal">  </span>
         </template>
-        <template #title>Income</template>
+        <template #title>Teachers</template>
         <template #action>
           <CDropdown placement="bottom-end">
             <CDropdownToggle color="transparent" class="p-0 text-white" :caret="false">

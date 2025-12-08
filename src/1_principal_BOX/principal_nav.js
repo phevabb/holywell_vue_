@@ -9,39 +9,29 @@ export default [
     badge: { color: 'primary', text: ' PRINCIPAL' },
   },
 
-  { component: 'CNavTitle', name: 'Student Fees' },
+  { component: 'CNavTitle', name: ' Demographics' },
 
+
+  
   {
     component: 'CNavItem',
-    name: 'Fee Structure',
-    to: { name: 'student_fee_structure' },
-    icon: 'cil-spreadsheet', // fixed typo
-  },
-  {
-    component: 'CNavItem',
-    name: 'Payments',
-    to: { name: 'student_fee_payments' },
-    icon: 'cil-pencil',
-  },
-  {
-    component: 'CNavItem',
-    name: 'Student Fee Records',
-    to: { name: 'student_fee_records_principal' }, // removed trailing space
+    name: 'Pupils per Class',
+    to: { name: 'students_per_class' }, // removed trailing space
     icon: 'cil-pencil',
   },
 
-  { component: 'CNavTitle', name: 'Family Fees' },
+  { component: 'CNavTitle', name: 'Fee Analysis' },
 
   {
     component: 'CNavItem',
-    name: 'Families',
-    to: { name: 'families' },
+    name: 'Expected Fees',
+    to: { name: 'expected_fee' },
     icon: 'cil-chart-pie',
   },
   {
     component: 'CNavItem',
-    name: 'Family Fee Records',
-    to: { name: 'family_fee_records' },
+    name: 'Fee Collections',
+    to: { name: 'fee_collections' },
     icon: 'cil-chart-pie',
   },
   {

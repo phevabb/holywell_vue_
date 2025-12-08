@@ -22,12 +22,28 @@ export const principalRoutes = {
       meta: { roles: ['principal'] },
     },
     {
-      path: 'fees/student-fee-records',
-      name: 'student_fee_records_principal',
+      path: 'students-per-class',
+      name: 'students_per_class',
       component: () =>
-        import('@/1_principal_BOX/views/theme/student_fee_records.vue'),
+        import('@/1_principal_BOX/views/theme/students_per_class.vue'),
       meta: { roles: ['principal'] },
     },
+    {
+      path: 'fees/analysis/expected-fees',
+      name: 'expected_fee',
+      component: () =>
+        import('@/1_principal_BOX/views/theme/expected_fees.vue'),
+      meta: { roles: ['principal'] },
+    },
+    {
+      path: 'fees/analysis/fee-collections',
+      name: 'fee_collections',
+      component: () =>
+        import('@/1_principal_BOX/views/theme/fee_collections.vue'),
+      meta: { roles: ['principal'] },
+    },
+
+
     // Add more principal routes here...
   ],
 }

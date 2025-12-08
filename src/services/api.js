@@ -74,12 +74,9 @@ export const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/149/149071
 // AUTH APIs
 export const login = (payload) => api.post('login/', payload)
 export const logout = () => api.post('logout/')
-
 export const changepassword = (data) => api.post('change-password/', data);
 export const resetpassword = (data) => api.post('password-reset/', data);
 export const resetpasswordconfirm = (data) => api.post('confirm/', data);
-
-
 
 
 // fee structure APIs 
@@ -95,12 +92,28 @@ export const delete_payment = (id) => api.delete(`fees/payments/${id}/`);
 
 // Student APIs
 export const st = () => api.get("student/students");
+export const get_num_of_students_insignt = () => api.get("student/students/total/");
+export const get_students_grouped_by_class_insignt = () => api.get("student/students/per_class/");
+
 export const create_student = (payload) => api.post("student/create/", payload);
 export const update_student = (id, payload) => api.put(`student/create/${id}/`, payload);
 export const delete_student = (id) => api.delete(`student/students/${id}/`);
 
+
+
 // student fee records APIs
 export const get_student_fee_record = () => api.get("fees/student-fee-records");
+
+export const get_expected_fees_insight = () => api.get("fees/student-fee-records/expected_fees/");
+export const get_collected_vs_pending_insight = () => api.get("fees/student-fee-records/collection_summary/");
+export const percentage_paid_by_class_insight = () => api.get("fees/student-fee-records/unpaid_percentage_by_class/");
+export const students_with_balance_insight = () => api.get("fees/student-fee-records/students_with_balance/");
+
+
+
+
+
+
 export const create_student_fee_record = (payload) => api.post("fees/student-fee-records/", payload);
 export const update_student_fee_record = (id, payload) => api.put(`fees/student-fee-records/${id}/`, payload);
 export const delete_student_fee_record = (id) => api.delete(`fees/student-fee-records/${id}/`); 
@@ -129,6 +142,9 @@ export const delete_class = (id) => api.delete(`student/classes/${id}/`);
 
 // staff APIs
 export const get_staff = () => api.get("staff/staff-profiles");
+export const num_of_staff_insight = () => api.get("staff/staff-profiles/total_teachers");
+
+
 export const create_staff = (payload) => api.post("staff/staff-profiles/", payload);  
 export const update_staff = (id, payload) => api.patch(`staff/staff-profiles/${id}/`, payload);
 export const delete_staff = (id) => api.delete(`staff/staff-profiles/${id}/`);
