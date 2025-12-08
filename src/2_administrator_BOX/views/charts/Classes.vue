@@ -288,24 +288,18 @@ const submitForm = async () => {
 
 };
 
-
-
-
-
-
-
-
-
 let response;
 
 // ✅ Do not touch currentClass.value.id unless you know you're in edit mode
 if (isEdit.value && currentClass.value?.id) {
 
+  const idtoedit = currentClass.value.id;
+  const thename = currentClass.value.name;
 
   response = await update_class(currentClass.value.id, cleanedForm2);
-  log("response from update", response);
+  console.log("response from update", response);
 
-  const index = gradeClasses.value.findIndex(c => c.id === currentClass.value.id);
+  const index = gradeClasses.value.findIndex(c => c.id === idtoedit);
   if (index !== -1) {
     const updatedClass = response.data;
 
@@ -317,7 +311,8 @@ if (isEdit.value && currentClass.value?.id) {
     gradeClasses.value[index] = updatedClass;
   }
 
-  toast.success('Class updated successfully!', { position: 'top-right' });
+
+  toast.success(`${thename} updated successfully!`, { position: 'top-right' })
 } else {
 
   response = await create_class(cleanedForm2);
@@ -350,10 +345,13 @@ const confirmDelete = async () => {
   loading.value = true
   showDeleteModal.value = false
 
+  const theid = classToDelete.value.id;
+  const thename = classToDelete.value.name;
+
   try {
     await delete_class(classToDelete.value.id)
-    gradeClasses.value = gradeClasses.value.filter(s => s.id !== classToDelete.value.id)
-    toast.success(`${classToDelete.value.name} deleted successfully!`, { position: 'top-right' })
+    gradeClasses.value = gradeClasses.value.filter(s => s.id !== theid)
+    toast.success(`${thename} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
 
     toast.error('Failed to delete class. Please try again.', { position: 'top-right' })

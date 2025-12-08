@@ -1,5 +1,8 @@
 
 // admin_nav.js
+import { cilCreditCard, cilLibrary, cilSchool, cilCalendar, cilAddressBook, cilPeople, cilList, cilSpreadsheet, cilCalculator, cilMoney } from '@coreui/icons'
+
+
 export default [
 
   {
@@ -20,19 +23,19 @@ export default [
     component: 'CNavItem',
     name: 'Fee Structure',
     to: { name: 'student_fee_structure' },
-    icon: 'cil-spreadsheet', // fixed typo
+    icon: cilList,
   },
   {
     component: 'CNavItem',
     name: 'Payments',
     to: { name: 'student_fee_payments' },
-    icon: 'cil-pencil',
+    icon: cilCreditCard,
   },
   {
     component: 'CNavItem',
     name: 'Student Fee Records',
     to: { name: 'student_fee_records_admin' }, // removed trailing space
-    icon: 'cil-pencil',
+    icon: cilSpreadsheet,
   },
 
   { component: 'CNavTitle', name: 'Family Fees' },
@@ -41,19 +44,19 @@ export default [
     component: 'CNavItem',
     name: 'Families',
     to: { name: 'families' },
-    icon: 'cil-chart-pie',
+    icon: cilPeople,
   },
   {
     component: 'CNavItem',
     name: 'Family Fee Records',
     to: { name: 'family_fee_records' },
-    icon: 'cil-chart-pie',
+    icon: cilCalculator,
   },
   {
     component: 'CNavItem',
     name: 'Family Payments',
     to: { name: 'family_fee_payments' },
-    icon: 'cil-chart-pie',
+    icon: cilMoney,
   },
 
   { component: 'CNavTitle', name: 'Staff / Student' },
@@ -62,13 +65,13 @@ export default [
     component: 'CNavItem',
     name: 'Staff Profiles',
     to: { name: 'staffProfile' },
-    icon: 'cil-chart-pie',
+    icon: cilAddressBook,
   },
   {
     component: 'CNavItem',
     name: 'Student Profiles',
     to: { name: 'studentProfile' },
-    icon: 'cil-chart-pie',
+    icon: 'cil-user',
   },
 
   { component: 'CNavTitle', name: 'Others' },
@@ -77,19 +80,19 @@ export default [
     component: 'CNavItem',
     name: 'Academic Years',
     to: { name: 'academicYears' },
-    icon: 'cil-chart-pie',
+    icon: cilCalendar,
   },
   {
     component: 'CNavItem',
     name: 'Classes',
     to: { name: 'classes' },
-    icon: 'cil-chart-pie',
+    icon: cilSchool,
   },
   {
     component: 'CNavItem',
     name: 'Terms',
     to: { name: 'terms' },
-    icon: 'cil-chart-pie',
+    icon: cilLibrary,
   },
  
 ]

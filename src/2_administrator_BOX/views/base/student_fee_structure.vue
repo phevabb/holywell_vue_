@@ -1,4 +1,6 @@
 <template>
+   
+
   <CRow>
     <CCol :xs="12">
       <CCard class="mb-4">
@@ -77,6 +79,7 @@
                   <CTableHeaderCell scope="col">Academic Year</CTableHeaderCell>
                   <CTableHeaderCell scope="col">Class</CTableHeaderCell>
                   <CTableHeaderCell scope="col">Term</CTableHeaderCell>
+                  <CTableHeaderCell scope="col">Has Discount</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-end">Amount (GHS)</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-end" style="width: 160px;">Actions</CTableHeaderCell>
                 </CTableRow>
@@ -93,6 +96,14 @@
                   <CTableDataCell>{{ row.academic_year?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.grade_class?.name }}</CTableDataCell>
                   <CTableDataCell>{{ row.term?.name }}</CTableDataCell>
+
+                  <CTableDataCell>
+                    <CBadge :color="row.is_discounted ? 'success' : 'secondary'">
+                      {{ row.is_discounted ? 'Yes' : 'No' }}
+                    </CBadge>
+                  </CTableDataCell>
+
+
                   <CTableDataCell class="text-end">
                     {{ formatAmount(row.amount) }}
                   </CTableDataCell>
@@ -125,56 +136,98 @@
   </CRow>
 
   <!-- Add/Edit Modal -->
-  <CModal :visible="showFormModal" @close="closeFormModal">
-    <CModalHeader>
-      <CModalTitle>{{ isEdit ? 'Edit Fee Structure' : 'Add Fee Structure' }}</CModalTitle>
-    </CModalHeader>
-    <CModalBody>
-      <div class="mb-3">
-        <CFormLabel for="academic_year">Academic Year</CFormLabel>
-        <CFormSelect id="academic_year" v-model="formFee.academicYearId">
-          <option value="" disabled  selected>Select Academic Year</option>
-          <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">{{ ay.name }}</option>
-        </CFormSelect>
-      </div>
+ <CModal :visible="showFormModal" @close="closeFormModal" size="xl">
 
-      <div class="mb-3">
-        <CFormLabel for="grade_class">Class (Grade)</CFormLabel>
-        <CFormSelect id="grade_class" v-model="formFee.gradeClassId">
-          <option value="" disabled  selected >Select Class</option>
-          <option v-for="gc in gradeClasses" :key="gc.id" :value="gc.id">{{ gc.name }}</option>
-        </CFormSelect>
-      </div>
+  
 
-      <div class="mb-3">
-        <CFormLabel for="term">Term</CFormLabel>
-        <CFormSelect id="term" v-model="formFee.termId">
-          <option value="" disabled  selected>Select Term</option>
-          <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
-        </CFormSelect>
-      </div>
 
-      <div class="mb-0">
-        <CFormLabel for="amount">Amount (GHS)</CFormLabel>
-        <CFormInput
-          id="amount"
-          v-model="formFee.amount"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="e.g., 250.00"
-        />
-      </div>
+  <CModalHeader>
+    <CModalTitle>{{ isEdit ? 'Edit Fee Structure' : 'Add Fee Structure' }}</CModalTitle>
+  </CModalHeader>
 
-      <div class="text-danger small mt-2" v-if="formValidationMessage">{{ formValidationMessage }}</div>
-    </CModalBody>
-    <CModalFooter>
-      <CButton color="secondary" variant="outline" @click="closeFormModal" :disabled="isSubmitting">Cancel</CButton>
-      <CButton color="primary" @click="submitForm" :disabled="isSubmitting">
-        <CSpinner size="sm" v-if="isSubmitting" class="me-2" /> {{ isEdit ? 'Update' : 'Save' }}
-      </CButton>
-    </CModalFooter>
-  </CModal>
+  <CModalBody>
+    <!-- Academic Year -->
+    <div class="mb-3">
+      <CFormLabel for="academic_year">Academic Year</CFormLabel>
+      <CFormSelect id="academic_year" v-model="formFee.academicYearId">
+        <option value="" disabled selected>Select Academic Year</option>
+        <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">{{ ay.name }}</option>
+      </CFormSelect>
+    </div>
+
+    <!-- Grade/Class -->
+    <div class="mb-3">
+      <CFormLabel for="grade_class">Class (Grade)</CFormLabel>
+      <CFormSelect id="grade_class" v-model="formFee.gradeClassId">
+        <option value="" disabled selected>Select Class</option>
+        <option v-for="gc in gradeClasses" :key="gc.id" :value="gc.id">{{ gc.name }}</option>
+      </CFormSelect>
+    </div>
+
+    <!-- Term -->
+    <div class="mb-3">
+      <CFormLabel for="term">Term</CFormLabel>
+      <CFormSelect id="term" v-model="formFee.termId">
+        <option value="" disabled selected>Select Term</option>
+        <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
+      </CFormSelect>
+    </div>
+
+    <!-- Amount -->
+    <div class="mb-3">
+      <CFormLabel for="amount">Amount (GHS)</CFormLabel>
+      <CFormInput
+        id="amount"
+        v-model="formFee.amount"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="e.g., 250.00"
+      />
+    </div>
+
+    <!-- Discount Toggle -->
+    <div class="mb-3 d-flex align-items-center">
+      <CFormLabel class="me-3 mb-0">Discounted Fee</CFormLabel>
+      <CFormSwitch
+        v-model="formFee.is_discount"
+        color="primary"
+        label="Yes"
+      />
+    </div>
+
+   <div v-if="formFee.is_discount" class="mb-3">
+  <CFormLabel>Select Students for Discount</CFormLabel>
+  <v-select
+    v-model="formFee.discounted_student_ids"
+    :options="studentOptionsForSelect"
+    :multiple="true"
+    :close-on-select="false"
+    placeholder="Search and select students"
+    :reduce="opt => opt.value" 
+  />
+</div>
+
+
+
+    <!-- Validation Message -->
+    <div class="text-danger small mt-2" v-if="formValidationMessage">{{ formValidationMessage }}</div>
+  </CModalBody>
+
+  <CModalFooter>
+    <CButton color="secondary" variant="outline" @click="closeFormModal" :disabled="isSubmitting">
+      Cancel
+    </CButton>
+
+    <CButton color="primary" @click="submitForm" :disabled="isSubmitting">
+      <CSpinner size="sm" v-if="isSubmitting" class="me-2" /> 
+      {{ isEdit ? 'Update' : 'Save' }}
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+
 
   <!-- Confirm Delete (Single) -->
   <CModal :visible="showDeleteSingleModal" @close="closeDeleteSingleModal">
@@ -207,6 +260,9 @@
 </template>
 
 <script setup>
+import vSelect from "vue3-select";
+import "vue3-select/dist/vue3-select.css";
+
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -223,7 +279,7 @@ const toast = useToast()
  *   amount: string|number
  * }
  */
-import { get_academic_years, get_classes, get_terms, create_fee_structure, get_fee_structures, update_fee_structure, delete_fee_structure } from '@/services/api.js'
+import {st, get_academic_years, get_classes, get_terms, create_fee_structure, get_fee_structures, update_fee_structure, delete_fee_structure } from '@/services/api.js'
 
 const feeStructureApi = {
   async listAcademicYears() {
@@ -283,6 +339,9 @@ const academicYears = ref([])
 const gradeClasses = ref([])
 const terms = ref([])
 
+
+
+
 /* NEW: search field */
 const searchField = ref('grade_class') // 'class' | 'academicYear' | 'term'
 const searchTerm = ref('')
@@ -293,11 +352,14 @@ const selectedIds = ref([])
 const showFormModal = ref(false)
 const isEdit = ref(false)
 const editingId = ref(null)
+
 const formFee = reactive({
   academicYearId: '',
   gradeClassId: '',
   termId: '',
   amount: '',
+  is_discount: false,
+  discounted_student_ids: [], // array of student IDs
 })
 const formValidationMessage = ref('')
 
@@ -353,6 +415,8 @@ function resetForm() {
   formFee.gradeClassId = ''
   formFee.termId = ''
   formFee.amount = ''
+  formFee.is_discount = false
+  formFee.discounted_student_ids = []
   formValidationMessage.value = ''
   editingId.value = null
 }
@@ -388,6 +452,42 @@ function loadReferenceData() {
     feeStructureApi.listTerms().then(x => (terms.value = x)),
   ])
 }
+
+const studentOptions = ref([])  // For discounted students selector
+
+const studentOptionsForSelect = computed(() =>
+  studentOptions.value
+    .filter(s => s.is_discounted_student) // only include discounted students
+    .map(s => ({
+      label: s.user?.full_name ?? s.full_name ?? s.name ?? `ID ${s.id}`,
+      value: s.id,
+    }))
+)
+
+
+
+async function fetchUsers() {
+  try {
+    const response = await st();
+    studentOptions.value = response.data;
+    
+    
+  }  catch (err) {
+    if (err.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check your internet connection.', { position: 'top-right' });
+    } else if (err.response) {
+      // API returned an error response
+      toast.error(err.response.data?.message || 'Failed to fetch students.', { position: 'top-right' });
+    } else {
+      // Unknown error
+      toast.error('An unexpected error occurred while fetching students.', { position: 'top-right' });
+    }
+  } 
+}
+
+
+
+
 async function loadFeeStructures() {
   isLoading.value = true
   errorMessage.value = ''
@@ -403,6 +503,7 @@ async function loadFeeStructures() {
     return (isLoading.value = false)
   }
 }
+
 
 /* ---------- Modal handlers ---------- */
 function openAddModal() {
@@ -454,6 +555,8 @@ function submitForm() {
     grade_class_id: formFee.gradeClassId,
     term_id: formFee.termId,
     amount: formFee.amount,
+    discounted_student_ids: formFee.is_discount ? formFee.discounted_student_ids : [],
+    is_discounted: formFee.is_discount,
   }
 
   const done = () => (isSubmitting.value = false)
@@ -539,6 +642,7 @@ onMounted(async () => {
     isLoading.value = true
     await loadReferenceData()
     await loadFeeStructures()
+    await fetchUsers()
   } finally {
     isLoading.value = false
   }

@@ -18,9 +18,8 @@ export default [
     component: 'CNavItem',
     name: 'Fee Structure',
     role: ['administrator'],
-    to: '/fees/student-fee-structure',  /* CHANGE HERE */
-    
-    icon: 'cil-spreadshee',
+    to: '/fees/student-fee-structure',  /* CHANGE HERE */    
+    icon: 'cil-pencil',
   },
   {
     component: 'CNavItem',

@@ -177,12 +177,16 @@ const confirmDelete = async () => {
   showDeleteModal.value = false
 
   try {
+
+    const idtodelete = staffToDelete.value.id
+    const thename = staffToDelete.value.user.full_name
+
     await delete_staff(staffToDelete.value.id)
-    staff.value = staff.value.filter(s => s.id !== staffToDelete.value.id)
+    staff.value = staff.value.filter(s => s.id !== idtodelete)
 
 
 
-    toast.success(`${staffToDelete.value.user.full_name} deleted successfully!`, { position: 'top-right' })
+    toast.success(`${thename} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
 
     toast.error('Failed to delete staff. Please try again.', { position: 'top-right' })

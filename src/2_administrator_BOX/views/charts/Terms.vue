@@ -267,9 +267,13 @@ const confirmDelete = async () => {
   showDeleteModal.value = false
 
   try {
+
+    const idtodelete = termToDelete.value.id;
+    const thename = termToDelete.value.name;
+
     await delete_term(termToDelete.value.id)
-    terms.value = terms.value.filter(t => t.id !== termToDelete.value.id)
-    toast.success(`${termToDelete.value.name} deleted successfully!`, { position: 'top-right' })
+    terms.value = terms.value.filter(t => t.id !== idtodelete)
+    toast.success(`${thename} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
 
    toast.error('Cannot delete this term because it is linked to other records.', { position: 'top-right' })

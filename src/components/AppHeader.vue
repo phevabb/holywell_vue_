@@ -1,6 +1,23 @@
 <script setup>
-import { onMounted, ref } from 'vue'
 import { useColorModes } from '@coreui/vue'
+import { ref, onMounted, computed } from 'vue'
+
+const role = ref('')
+
+onMounted(() => {
+  const stored = localStorage.getItem('user')
+
+  if (stored) {
+    const user = JSON.parse(stored)
+    role.value = user.role || 'guest'
+  } else {
+    role.value = 'guest'
+  }
+})
+
+const roleLabel = computed(() => {
+  return role.value === 'administrator' ? 'ADMINISTRATOR' : 'PRINCIPAL'
+})
 
 import AppBreadcrumb from '@/components/AppBreadcrumb.vue'
 import AppHeaderDropdownAccnt from '@/components/AppHeaderDropdownAccnt.vue'
@@ -28,31 +45,26 @@ onMounted(() => {
         <CIcon icon="cil-menu" size="lg" />
       </CHeaderToggler>
       <CHeaderNav class="d-none d-md-flex">
-        <CNavItem>
-          <CNavLink href="/dashboard"> Dashboard </CNavLink>
-        </CNavItem>
-        <CNavItem>
-          <CNavLink href="#">Users</CNavLink>
-        </CNavItem>
-        <CNavItem>
-          <CNavLink href="#">Settings</CNavLink>
-        </CNavItem>
+        
+        
       </CHeaderNav>
       <CHeaderNav class="ms-auto">
         <CNavItem>
-          <CNavLink href="#">
-            <CIcon icon="cil-bell" size="lg" />
-          </CNavLink>
+          <div style="margin-top: 2rem;" class="mx-3 my-2">
+          </div>
+
+         <p class="text-2xl font-extrabold tracking-wide text-center select-none mt-3">
+  {{ role === 'administrator' ? 'ADMINISTRATOR' : 'PRINCIPAL' }}
+</p>
+
+
+     
         </CNavItem>
         <CNavItem>
-          <CNavLink href="#">
-            <CIcon icon="cil-list" size="lg" />
-          </CNavLink>
+          
         </CNavItem>
         <CNavItem>
-          <CNavLink href="#">
-            <CIcon icon="cil-envelope-open" size="lg" />
-          </CNavLink>
+          
         </CNavItem>
       </CHeaderNav>
       <CHeaderNav>
@@ -106,3 +118,4 @@ onMounted(() => {
     </CContainer>
   </CHeader>
 </template>
+

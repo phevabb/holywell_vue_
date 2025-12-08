@@ -41,14 +41,14 @@
               <CTableRow>
                 <CTableHeaderCell>#</CTableHeaderCell>
                 <CTableHeaderCell>Name</CTableHeaderCell>
+        
                 <CTableHeaderCell>Current Class</CTableHeaderCell>
                 <CTableHeaderCell>Dad's Contact</CTableHeaderCell>
                 <CTableHeaderCell>Mom's Contact</CTableHeaderCell>
-                
-                
-               
-                <CTableHeaderCell>Status</CTableHeaderCell>
+                <CTableHeaderCell>Has Discount</CTableHeaderCell>
                 <CTableHeaderCell class="text-end">Actions</CTableHeaderCell>
+
+
               </CTableRow>
             </CTableHead>
 
@@ -76,8 +76,8 @@
     <CTableDataCell>{{ student.contact_of_mother }}</CTableDataCell>
 
     <CTableDataCell>
-      <CBadge :color="student.user.is_active ? 'success' : 'secondary'">
-        {{ student.user.is_active ? 'Active' : 'Inactive' }}
+      <CBadge :color="student.is_discounted_student ? 'success' : 'secondary'">
+        {{ student.is_discounted_student ? 'Yes' : 'No' }}
       </CBadge>
     </CTableDataCell>
     <CTableDataCell class="text-end">
@@ -146,14 +146,16 @@
            
 
             <div class="col-md-6">  
-            <CFormLabel>Current Class</CFormLabel>
-                    
-            <CFormSelect v-model="form.current_class">
-              <option v-for="cls in classOptions" :key="cls.value" :value="cls.value">
-                {{ cls.label }}
-              </option>
-            </CFormSelect>
+              <CFormLabel>Current Class</CFormLabel>                    
+              <CFormSelect v-model="form.current_class">
+                <option disabled value="" selected>Select current class</option>
+                <option v-for="cls in classOptions" :key="cls.value" :value="cls.value">
+                  {{ cls.label }}
+                </option>
+              </CFormSelect>
             </div>
+
+     
 
             
           </div>
@@ -176,6 +178,17 @@
               <CFormInput v-model="form.contact_of_mother" />
               
             </div>
+
+            <div class="col-md-4 d-flex align-items-center mt-4">
+  <CFormLabel class="me-3 mb-0">Discounted Student</CFormLabel>
+  <CFormSwitch 
+    color="primary"
+    v-model="form.is_discounted_student"
+    label="Yes"
+  />
+</div>
+
+
           </div>
         </CTab>
 
@@ -228,6 +241,7 @@ async function fetchUsers() {
 
   try {
     const response = await st();
+    console.log("Fetched students:print", response.data);
 
 
 
@@ -325,6 +339,7 @@ const form = ref({
 
   // other top-level fields
   familyId: '',
+  is_discounted_student: false,
   immunized: false,
   allergies: false,
   allergic_foods: '',
@@ -360,7 +375,7 @@ const filteredStudents = computed(() => {
 const openAddModal = () => {
   isEdit.value = false
   currentStudent.value = null
-  form.value = { ...form.value, full_name: '', gender: '', nationality: '', date_of_birth: '', current_class: '', familyId: '' }
+  form.value = { ...form.value, full_name: '', is_discounted_student:false, contact_of_mother:'', contact_of_father:'', gender: '', nationality: '', date_of_birth: '', current_class: '', familyId: '' }
   showFormModal.value = true
 }
 
@@ -437,6 +452,7 @@ const prepareStudentPayload = (payload) => {
     },
     current_class: payload.current_class,
     house_number: payload.houseNumber,
+    is_discounted_student: payload.is_discounted_student,
     
     last_school_attended: payload.lastSchoolAttended,
     class_seeking_admission_to: payload.class_seeking_admission_to,
@@ -578,7 +594,7 @@ const submitForm = async () => {
         return;
       }
     }
-
+    console.log("payload to send", payload);
     const response = await create_student(payload);
 
 
@@ -598,7 +614,7 @@ const submitForm = async () => {
 
       // ✅ OPTIONAL: Delay navigation slightly to ensure UI update
       setTimeout(() => {
-        router.push({ path: '/student' });
+        router.push({ path: '/administrator/student' });
       }, 500);
     } else {
       throw new Error('No response data from the server.');
@@ -606,6 +622,7 @@ const submitForm = async () => {
 
   } catch (err) {
    
+    console.log("the error", err);
 
   const serverData = err?.e?.response
 
@@ -624,7 +641,6 @@ const submitForm = async () => {
   }
 };
 
-
 const deleteStudent = (student) => {
   studentToDelete.value = student
   showDeleteModal.value = true
@@ -635,18 +651,26 @@ const confirmDelete = async () => {
   loading.value = true
   showDeleteModal.value = false
 
-  try {
-    await delete_student(studentToDelete.value.id)
-    students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
-    toast.success(`${studentToDelete.value.user.full_name} deleted successfully!`, { position: 'top-right' })
-  } catch (error) {
+  // Store id and name locally to use after delete
+  const studentId = studentToDelete.value.id
+  const studentName = studentToDelete.value.user.full_name
 
+  try {
+    await delete_student(studentId)
+    
+    // Remove student from local state
+    students.value = students.value.filter(s => s.id !== studentId)
+    
+    toast.success(`${studentName} deleted successfully!`, { position: 'top-right' })
+  } catch (error) {
+    console.error('Delete error:', error)
     toast.error('Failed to delete student. Please try again.', { position: 'top-right' })
   } finally {
     loading.value = false
     studentToDelete.value = null
   }
 }
+
 
 const cancelDelete = () => {
   showDeleteModal.value = false
