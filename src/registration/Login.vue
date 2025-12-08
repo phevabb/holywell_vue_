@@ -77,7 +77,7 @@
             <CCard class="text-white bg-primary py-5" style="width: 44%">
               <CCardBody class="text-center">
                 <div>
-                  <h2>Sign up</h2>
+                  <h2>HOLYWELL INTERNATIONAL SCHOOL</h2>
                   <hr />
                   <p>
   Simplify school fees.<br>

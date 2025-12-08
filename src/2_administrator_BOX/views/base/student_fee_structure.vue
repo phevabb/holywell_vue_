@@ -339,6 +339,68 @@ const academicYears = ref([])
 const gradeClasses = ref([])
 const terms = ref([])
 
+async function confirmDeleteBulk() {
+  if (selectedIds.value.length === 0) return
+
+  isDeleting.value = true
+
+  // Keep track of successful deletes
+  const failedDeletes = []
+
+  // Use Promise.allSettled for parallel deletion
+  const results = await Promise.allSettled(
+    selectedIds.value.map(id => feeStructureApi.deleteFeeStructure(id))
+  )
+
+  results.forEach((result, index) => {
+    const id = selectedIds.value[index]
+    if (result.status === 'fulfilled') {
+      // Remove from feeStructures
+      feeStructures.value = feeStructures.value.filter(r => r.id !== id)
+    } else {
+      failedDeletes.push({
+        id,
+        error: result.reason
+      })
+    }
+  })
+
+  // Show errors for failed deletes
+  failedDeletes.forEach(f => {
+    const associatedRecordName =
+      f.error.response?.data?.associatedRecordName ||
+      "a linked student's fee record"
+
+    let message =
+      f.error.response?.data?.message ||
+      f.error.response?.data?.error ||
+      f.error.response?.data?.detail ||
+      f.error.message ||
+      `Cannot delete fee structure ID ${f.id} because it is linked to ${associatedRecordName}.`
+
+    if (message.includes('violates foreign key constraint')) {
+      message = `Cannot delete fee structure ID ${f.id} because it is linked to ${associatedRecordName}. Please delete the associated record first.`
+    }
+
+    toast.error(message, { position: 'top-right' })
+  })
+
+  // Clear selection only for successfully deleted IDs
+  const successfulIds = selectedIds.value.filter(
+    id => !failedDeletes.some(f => f.id === id)
+  )
+  selectedIds.value = selectedIds.value.filter(id => failedDeletes.some(f => f.id === id))
+
+  showDeleteBulkModal.value = false
+
+  if (successfulIds.length > 0) {
+    toast.success(`Deleted ${successfulIds.length} fee structure(s) successfully.`, {
+      position: 'top-right'
+    })
+  }
+
+  isDeleting.value = false
+}
 
 
 

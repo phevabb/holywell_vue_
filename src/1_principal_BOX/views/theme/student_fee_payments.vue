@@ -68,6 +68,7 @@
             <CTable hover responsive>
               <CTableHead>
                 <CTableRow>
+
                   <!-- Select-all (applies to filtered rows) -->
                   <CTableHeaderCell scope="col" class="text-center" style="width: 48px;">
                     <CFormCheck
@@ -255,6 +256,8 @@
     </CModalFooter>
   </CModal>
 
+
+  
   <!-- Optional: Success toasts -->
   <CToaster placement="top-end">
     <CToast v-for="t in toasts" :key="t.id" :visible="t.visible" :color="t.color" class="text-white mb-2">
@@ -564,6 +567,8 @@ function closeDeleteSingleModal() {
     deleteTarget.value = null
   }
 }
+
+
 function openBulkDeleteConfirm() {
   showDeleteBulkModal.value = true
 }
@@ -572,6 +577,7 @@ function closeBulkDeleteConfirm() {
     showDeleteBulkModal.value = false
   }
 }
+
 
 /* ---------- Submit (Create/Update) ---------- */
 function submitForm() {

@@ -15,15 +15,7 @@
                 style="min-width: 260px;"
               />
 
-              <CButton
-                color="danger"
-                size="sm"
-                :disabled="selectedIds.length === 0"
-                @click="openBulkDeleteConfirm"
-              >
-                Delete Selected ({{ selectedIds.length }})
-              </CButton>
-
+             
               <CButton color="primary" size="sm" @click="openAddModal">
                 Add Staff
               </CButton>
@@ -39,13 +31,7 @@
           <CTable v-else hover responsive bordered class="shadow-sm">
             <CTableHead>
               <CTableRow>
-                <CTableHeaderCell class="text-center" style="width: 48px;">
-                  <CFormCheck
-                    :checked="allSelected"
-                    :indeterminate="someSelected"
-                    @change="toggleSelectAll"
-                  />
-                </CTableHeaderCell>
+                
                 <CTableHeaderCell>#</CTableHeaderCell>
                 <CTableHeaderCell>Name</CTableHeaderCell>
                 
@@ -59,9 +45,7 @@
 
             <CTableBody>
               <CTableRow v-for="(row, idx) in filteredStaff" :key="row.id">
-                <CTableDataCell class="text-center">
-                  <CFormCheck v-model="selectedIds" :value="row.id" />
-                </CTableDataCell>
+                
                 <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
                 <CTableDataCell>{{ row.user.full_name }}</CTableDataCell>
                 

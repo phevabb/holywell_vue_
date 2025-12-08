@@ -26,6 +26,18 @@
               <CButton color="light" class="text-primary border-primary" size="sm" @click="openAddModal">
                 <CIcon icon="cil-user-follow" class="me-1" /> Add Student
               </CButton>
+
+              <!-- Bulk delete -->
+              <CButton
+                color="danger"
+                size="sm"
+                :disabled="selectedIds.length === 0"
+                @click="openBulkDeleteConfirm"
+              >
+                Delete Selected ({{ selectedIds.length }})
+              </CButton>
+
+
             </div>
           </div>
         </CCardHeader>
@@ -39,6 +51,17 @@
 
             <CTableHead color="light">
               <CTableRow>
+
+                  <!-- Select-all (applies to filtered rows) -->
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 48px;">
+                    <CFormCheck
+                      :checked="allSelected"
+                      :indeterminate="someSelected"
+                      @change="toggleSelectAll"
+                      aria-label="Select all in current view"
+                    />
+                  </CTableHeaderCell>
+
                 <CTableHeaderCell>#</CTableHeaderCell>
                 <CTableHeaderCell>Name</CTableHeaderCell>
         
@@ -53,6 +76,7 @@
             </CTableHead>
 
 <CTableBody>
+
   <!-- Loading state -->
   <CTableRow v-if="loading">
     <CTableDataCell colspan="8" class="text-center py-4">
@@ -69,6 +93,13 @@
 
   <!-- Data rows -->
   <CTableRow v-else v-for="(student, idx) in filteredStudents" :key="student.id">
+    
+    
+    <CTableDataCell class="text-center">
+                    <CFormCheck v-model="selectedIds" :value="student.id" aria-label="Select row" />
+    </CTableDataCell>
+
+
     <CTableHeaderCell>{{ idx + 1 }}</CTableHeaderCell>
     <CTableDataCell>{{ student.user.full_name }}</CTableDataCell>
     <CTableDataCell>{{ student.current_class }}</CTableDataCell>
@@ -111,6 +142,25 @@
     <CButton color="danger" @click="confirmDelete">Delete</CButton>
   </CModalFooter>
 </CModal>
+
+
+
+  <!-- Confirm Delete (Bulk) -->
+  <CModal :visible="showDeleteBulkModal" @close="closeBulkDeleteConfirm">
+    <CModalHeader><CModalTitle>Delete Selected</CModalTitle></CModalHeader>
+    <CModalBody>
+      You are about to delete <strong>{{ selectedIds.length }}</strong> payment(s).
+      This action cannot be undone. Continue?
+    </CModalBody>
+    <CModalFooter>
+      <CButton color="secondary" variant="outline" @click="closeBulkDeleteConfirm" :disabled="isDeleting">Cancel</CButton>
+      <CButton color="danger" @click="confirmDeleteBulk" :disabled="isDeleting">
+        <CSpinner size="sm" v-if="isDeleting" class="me-2" />Delete Selected
+      </CButton>
+    </CModalFooter>
+  </CModal>
+
+
 
 
   <!-- Modal -->
@@ -234,6 +284,46 @@ import {st} from '@/services/api'
 import {create_student} from '@/services/api'
 import {update_student} from '@/services/api'
 import {delete_student} from '@/services/api' 
+
+const selectedIds = ref([])
+const showDeleteBulkModal = ref(false)
+const isDeleting = ref(false)
+
+function openBulkDeleteConfirm() {
+  showDeleteBulkModal.value = true
+}
+function closeBulkDeleteConfirm() {
+  if (!isDeleting.value) {
+    showDeleteBulkModal.value = false
+  }
+}
+
+
+async function confirmDeleteBulk() {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+
+  isDeleting.value = true
+
+  try {
+    for (const id of ids) {
+      await delete_student(id)
+    }
+
+    const toDelete = new Set(ids)
+    students.value = students.value.filter(s => !toDelete.has(s.id))
+
+    selectedIds.value = []
+    showDeleteBulkModal.value = false
+
+    toast.success('Selected students deleted successfully!')
+  } catch (error) {
+    console.error(error)
+    toast.error('Failed to delete selected students.')
+  } finally {
+    isDeleting.value = false
+  }
+}
 
 
 async function fetchUsers() {
@@ -371,6 +461,27 @@ const filteredStudents = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
   return term ? students.value.filter(s => s.user.full_name.toLowerCase().includes(term)) : students.value
 })
+const filteredIds = computed(() => filteredStudents.value.map(s => s.id))
+
+const allSelected = computed(() =>
+  filteredIds.value.length > 0 && filteredIds.value.every(id => selectedIds.value.includes(id))
+)
+
+const someSelected = computed(() =>
+  filteredIds.value.length > 0 &&
+  !allSelected.value &&
+  filteredIds.value.some(id => selectedIds.value.includes(id))
+)
+
+function toggleSelectAll() {
+  if (allSelected.value) {
+    // unselect all visible
+    selectedIds.value = selectedIds.value.filter(id => !filteredIds.value.includes(id))
+  } else {
+    // select all visible
+    selectedIds.value = [...new Set([...selectedIds.value, ...filteredIds.value])]
+  }
+}
 
 const openAddModal = () => {
   isEdit.value = false
@@ -378,7 +489,6 @@ const openAddModal = () => {
   form.value = { ...form.value, full_name: '', is_discounted_student:false, contact_of_mother:'', contact_of_father:'', gender: '', nationality: '', date_of_birth: '', current_class: '', familyId: '' }
   showFormModal.value = true
 }
-
 
 const openEditModal = (student) => {
 
@@ -434,10 +544,14 @@ const openEditModal = (student) => {
   showFormModal.value = true;
 };
 
+
+
 const closeFormModal = () => {
   showFormModal.value = false
   currentStudent.value = null
 }
+
+
 
 const prepareStudentPayload = (payload) => {
   return {
