@@ -12,7 +12,7 @@
           <!-- Search Input -->
           <CFormInput
             v-model="searchTerm"
-            placeholder="Search by class..."
+            placeholder="Search by Year..."
             size="sm"
             style="width: 250px;"
           />
@@ -37,16 +37,25 @@
                 <CTableHeaderCell scope="col">Class</CTableHeaderCell>
                 <CTableHeaderCell scope="col">Term</CTableHeaderCell>
                 <CTableHeaderCell scope="col">Academic Year</CTableHeaderCell>
-                <CTableHeaderCell scope="col">Expected Amount</CTableHeaderCell>
+                <CTableHeaderCell scope="col">Total Students</CTableHeaderCell>
+                <CTableHeaderCell scope="col">Unpaid Students</CTableHeaderCell>
+                <CTableHeaderCell scope="col">Unpaid Percentage (%)</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
             <CTableBody>
               <CTableRow v-for="(row, idx) in filteredRecords" :key="row.id">
                 <CTableHeaderCell scope="row">{{ idx + 1 }}</CTableHeaderCell>
-                <CTableDataCell>{{ row.grade_class_name }}</CTableDataCell>
-                <CTableDataCell>{{ row.term_name }}</CTableDataCell>
-                <CTableDataCell>{{ row.academic_year_name }}</CTableDataCell>
-                <CTableDataCell>{{ row.expected_amount }}</CTableDataCell>
+               <CTableDataCell>{{ row.class_name }}</CTableDataCell>
+                <CTableDataCell>{{ row.term }}</CTableDataCell>
+                <CTableDataCell>{{ row.academic_year }}</CTableDataCell>
+                <CTableDataCell>{{ row.total_students }}</CTableDataCell>
+                <CTableDataCell>{{ row.unpaid_students }}</CTableDataCell>
+<CTableDataCell>{{ formatNumber(row.unpaid_percentage) }}</CTableDataCell>
+
+
+        
+
+       
               </CTableRow>
             </CTableBody>
           </CTable>
@@ -61,11 +70,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { get_expected_fees_insight } from '../../../services/api'
+import { percentage_paid_by_class_insight } from '../../../services/api'
 
 const isLoading = ref(false)
 const errorMessage = ref('')
 const records = ref([])
+
+function formatNumber(value) {
+  if (value === null || value === undefined) return '0'
+  // Ensures 2 decimal places + comma formatting
+  return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 
 // single search term
 const searchTerm = ref('')
@@ -75,7 +91,7 @@ const filteredRecords = computed(() => {
   if (!q) return records.value
 
   return records.value.filter(row => {
-    return String(row?.grade_class_name || '').toLowerCase().includes(q)
+    return String(row?.academic_year || '').toLowerCase().includes(q)
   })
 })
 
@@ -83,7 +99,7 @@ async function loadRecords() {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const rows = await get_expected_fees_insight()
+    const rows = await percentage_paid_by_class_insight()
 
     records.value = rows.data || rows
   } catch (err) {
@@ -95,6 +111,7 @@ async function loadRecords() {
 
 onMounted(() => loadRecords())
 </script>
+
 
 
 <style scoped>

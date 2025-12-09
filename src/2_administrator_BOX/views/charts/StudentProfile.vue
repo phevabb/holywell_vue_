@@ -318,7 +318,7 @@ async function confirmDeleteBulk() {
 
     toast.success('Selected students deleted successfully!')
   } catch (error) {
-    console.error(error)
+
     toast.error('Failed to delete selected students.')
   } finally {
     isDeleting.value = false
@@ -331,10 +331,6 @@ async function fetchUsers() {
 
   try {
     const response = await st();
-    console.log("Fetched students:print", response.data);
-
-
-
 
     students.value = response.data;
     
@@ -708,7 +704,7 @@ const submitForm = async () => {
         return;
       }
     }
-    console.log("payload to send", payload);
+
     const response = await create_student(payload);
 
 
@@ -736,7 +732,7 @@ const submitForm = async () => {
 
   } catch (err) {
    
-    console.log("the error", err);
+
 
   const serverData = err?.e?.response
 
@@ -777,7 +773,7 @@ const confirmDelete = async () => {
     
     toast.success(`${studentName} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Delete error:', error)
+
     toast.error('Failed to delete student. Please try again.', { position: 'top-right' })
   } finally {
     loading.value = false

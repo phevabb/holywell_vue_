@@ -1,8 +1,13 @@
 
 import axios from 'axios'
 
+
+
+// http://127.0.0.1:8000/api/
+ 
+
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/',
+  baseURL: 'https://1-phevabb2997-gi1xzy3j.leapcell.dev/api/',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -42,9 +47,10 @@ api.interceptors.request.use(
   const token = localStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Token ${token}`
-    console.log('Authorization header set for', config.url, token)
+
   } else {
-    console.warn('No token found for protected request', config.url)
+    // No token found, optionally handle this case (e.g., redirect to login)
+    
   }
 }
 
@@ -60,7 +66,7 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status
     if (status === 401) {
-      console.warn('Unauthorized: clearing auth and redirecting to login.')
+     
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       // Optionally: window.location.hash = '#/login'
@@ -71,7 +77,15 @@ api.interceptors.response.use(
 
 export const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
 
+
+
+export const get_administrators = () => api.get("administrators/");
+export const create_administrator = (payload) => api.post("administrators/", payload);
+export const update_administrator = (id, payload) => api.put(`administrators/${id}/`, payload);
+export const delete_administrator = (id) => api.delete(`administrators/${id}/`);
+
 // AUTH APIs
+
 export const login = (payload) => api.post('login/', payload)
 export const logout = () => api.post('logout/')
 export const changepassword = (data) => api.post('change-password/', data);

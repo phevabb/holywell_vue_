@@ -22,7 +22,7 @@
                     </CInputGroupText>
                     <CFormInput
                       v-model="username"
-                      placeholder="Username"
+                      placeholder="Email"
                       autocomplete="username"
                       required
                     />
@@ -135,7 +135,7 @@ function nextTarget() {
     const raw = localStorage.getItem('user')
     if (raw) user = JSON.parse(raw)
   } catch (e) {
-    console.error('Failed to parse user from storage:', e)
+
   }
 
   // 3) Role-based landing (use names that DEFINITELY exist)
@@ -186,7 +186,7 @@ async function onSubmit() {
       )
     }
   } catch (e) {
-    console.log('Login error:', e)
+
     const backendError =
       e?.response?.data?.non_field_errors?.[0] ||
       e?.response?.data?.detail ||

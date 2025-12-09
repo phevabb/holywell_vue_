@@ -14,12 +14,12 @@ onMounted(async () => {
   try {
     const k = await get_num_of_students_insignt()  // wait for the Promise to resolve
     const num_staff = await num_of_staff_insight()
-    console.log("num_of_staff", num_staff)
+
 
     num_of_students.value = k.data.total  // assign the resolved total
     num_of_staff.value = num_staff.data.total_teachers  // assign the resolved total teachers
 
-    console.log('Number of students value:', num_of_students.value)
+
 
     document.documentElement.addEventListener('ColorSchemeChange', () => {
       if (widgetChartRef1.value) {
@@ -33,7 +33,7 @@ onMounted(async () => {
       }
     })
   } catch (err) {
-    console.error('Failed to fetch number of students:', err)
+
   }
 })
 

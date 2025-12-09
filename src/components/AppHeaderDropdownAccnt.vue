@@ -13,7 +13,7 @@ const handleLogout = async () => {
     localStorage.removeItem('user')
     router.push('/login')
   } catch (error) {
-    console.error('Logout failed', error)
+
   }
 }
 
@@ -22,7 +22,7 @@ const goToChangePassword = () => {
     ? JSON.parse(localStorage.getItem("user"))
     : null
   if (!user) {
-    console.warn("No user found, cannot redirect")
+
     return
   } 
   const role = user.role   // or your actual auth store
@@ -32,7 +32,7 @@ const goToChangePassword = () => {
   } else if (role === "administrator") {
     router.push({ name: "admin_change_password" })
   } else {
-    console.warn("Unknown role, cannot redirect")
+
   }
 }
 

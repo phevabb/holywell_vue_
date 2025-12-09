@@ -36,44 +36,24 @@ export default [
   },
   {
     component: 'CNavItem',
-    name: 'Family Payments',
-    to: { name: 'family_fee_payments' },
+    name: 'Debt Percentage by Class',
+    to: { name: 'class_debt' },
     icon: 'cil-chart-pie',
   },
 
-  { component: 'CNavTitle', name: 'Staff / Student' },
+  { component: 'CNavTitle', name: 'Add Admin' },
 
   {
     component: 'CNavItem',
-    name: 'Staff Profiles',
-    to: { name: 'staffProfile' },
+    name: 'Add Administrator',
+    to: { name: 'add_admin' },
     icon: 'cil-chart-pie',
   },
-  {
-    component: 'CNavItem',
-    name: 'Student Profiles',
-    to: { name: 'studentProfile' },
-    icon: 'cil-chart-pie',
-  },
+  
 
-  { component: 'CNavTitle', name: 'Others' },
 
-  {
-    component: 'CNavItem',
-    name: 'Academic Years',
-    to: { name: 'academicYears' },
-    icon: 'cil-chart-pie',
-  },
-  {
-    component: 'CNavItem',
-    name: 'Classes',
-    to: { name: 'classes' },
-    icon: 'cil-chart-pie',
-  },
-  {
-    component: 'CNavItem',
-    name: 'Terms',
-    to: { name: 'terms' },
-    icon: 'cil-chart-pie',
-  },
+
+  
+  
+  
 ]

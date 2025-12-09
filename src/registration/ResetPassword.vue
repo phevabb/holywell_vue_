@@ -93,7 +93,7 @@ const sendResetEmail = async () => {
     email: email.value,
   })
 
-  console.log("RESET PASSWORD RESPONSE:", res.data)
+
 
     email.value='';
     router.push("/password-reset-done")

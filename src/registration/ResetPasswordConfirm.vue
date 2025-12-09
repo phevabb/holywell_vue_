@@ -119,12 +119,12 @@ const showPassword2 = ref(false);
 
 const router = useRouter();
 const hash = window.location.hash;  
-console.log("HASH:", hash);
+
 
 // "#/reset-password-confirm/NA/<token>"
 const segments = hash.replace("#", "").split("/");
 
-console.log("Segments:", segments);
+
 
 // ["", "reset-password-confirm", "NA", "<token>"]
 const uidb64 = segments[2];
@@ -169,7 +169,7 @@ async function handleSubmit() {
   new_password2: password2.value,
 };
 
-console.log("payload:", payload);   
+
 
 
     const response = await resetpasswordconfirm(payload);

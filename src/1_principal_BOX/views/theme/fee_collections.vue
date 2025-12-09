@@ -37,8 +37,8 @@
                
                 <CTableHeaderCell scope="col">Term</CTableHeaderCell>
                 <CTableHeaderCell scope="col">Academic Year</CTableHeaderCell>
-                <CTableHeaderCell scope="col">Collected Amount</CTableHeaderCell>
-                <CTableHeaderCell scope="col">Pending Amount</CTableHeaderCell>
+                <CTableHeaderCell scope="col">Collected Amount (GHS)</CTableHeaderCell>
+                <CTableHeaderCell scope="col">Pending Amount (GHS)</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
             <CTableBody>
@@ -97,7 +97,7 @@ async function loadRecords() {
   errorMessage.value = ''
   try {
     const rows = await get_collected_vs_pending_insight()
-    console.log('Fetched expected fees insight:', rows)
+
     records.value = rows.data || rows
   } catch (err) {
     errorMessage.value = err?.message || 'Failed to load fee records.'

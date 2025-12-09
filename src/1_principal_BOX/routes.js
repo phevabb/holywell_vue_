@@ -42,6 +42,20 @@ export const principalRoutes = {
         import('@/1_principal_BOX/views/theme/fee_collections.vue'),
       meta: { roles: ['principal'] },
     },
+    {
+      path: 'fees/debt-percentage-by-class',
+      name: 'class_debt',
+      component: () =>
+        import('@/1_principal_BOX/views/theme/class_debt.vue'),
+      meta: { roles: ['principal'] },
+    },
+    {
+      path: 'add-administrator',
+      name: 'add_admin',
+      component: () =>
+        import('@/1_principal_BOX/views/theme/add_admin.vue'),
+      meta: { roles: ['principal'] },
+    },
 
 
     // Add more principal routes here...

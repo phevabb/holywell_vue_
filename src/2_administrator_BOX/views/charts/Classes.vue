@@ -297,7 +297,7 @@ if (isEdit.value && currentClass.value?.id) {
   const thename = currentClass.value.name;
 
   response = await update_class(currentClass.value.id, cleanedForm2);
-  console.log("response from update", response);
+
 
   const index = gradeClasses.value.findIndex(c => c.id === idtoedit);
   if (index !== -1) {
@@ -324,7 +324,7 @@ if (isEdit.value && currentClass.value?.id) {
     closeFormModal();
 
   } catch (err) {
-    console.log("the error", err)
+
 
 
     const backendMessage = err.response?.data?.message || 'Failed to submit form.';

@@ -191,12 +191,12 @@ const confirmDelete = async () => {
 
   try {
     const response = await delete_academic_year(idToDelete)
-    console.log('Delete response:', response)
+
 
     academicYears.value = academicYears.value.filter(y => y.id !== idToDelete)
     toast.success(`${nameToDelete} deleted successfully!`, { position: 'top-right' })
   } catch (error) {
-    console.error('Delete error:', error)
+
     toast.error(
       'Cannot delete this academic year because it is linked to other records.',
       { position: 'top-right' }

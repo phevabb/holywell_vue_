@@ -329,7 +329,7 @@ if (isEdit.value && currentClass.value?.id) {
     closeFormModal();
 
   } catch (err) {
-    console.log("the error", err)
+
 
 
     const backendMessage = err.response?.data?.message || 'Failed to submit form.';

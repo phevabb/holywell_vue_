@@ -48,10 +48,10 @@ const AppSidebarNav = defineComponent({
     // Read role saved during login
     const userRaw = localStorage.getItem('user')
 
-    console.log('AppSidebarNav userRaw: print', userRaw)
+
     const user = userRaw ? JSON.parse(userRaw) : null
     const role = user?.role
-    console.log('AppSidebarNav role: print', role)
+
     const nav = role === 'administrator'
       ? adminNav
       : role === 'principal'
