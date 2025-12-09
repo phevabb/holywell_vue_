@@ -11,7 +11,7 @@ export const principalRoutes = {
       path: 'dashboard',
       name: 'PrincipalDashboard',
       component: () =>
-        import('@/1_principal_BOX/views/dashboard/dashboard.vue'),
+        import('@/1_principal_BOX/views/dashboard/Dashboard.vue'),
       meta: { roles: ['principal'] },
     },
     {
