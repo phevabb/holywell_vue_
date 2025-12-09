@@ -6,8 +6,8 @@ import { RouterLink, useRoute } from 'vue-router'
 import { CBadge, CSidebarNav, CNavItem, CNavGroup, CNavTitle } from '@coreui/vue'
 
 
-import adminNav from '@/2_administrator_Box/admin_nav'
-import principalNav from '@/1_principal_Box/principal_nav'
+import adminNav from '@/2_administrator_Box/admin_nav.js'
+import principalNav from '@/1_principal_Box/principal_nav.js'
 
 import simplebar from 'simplebar-vue'
 import 'simplebar-vue/dist/simplebar.min.css'
